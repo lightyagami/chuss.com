@@ -1,0 +1,21 @@
+{
+  "downloadedAt": "2026-09-09T08:55:59.107Z",
+  "totalGames": 11352,
+  "users": {
+    "100LoseStreak": {
+      "gamesCount": 6834,
+      "file": "100losestreak_all_games.pgn",
+      "sizeBytes": 15586051
+    },
+    "demonexe2": {
+      "gamesCount": 4386,
+      "file": "demonexe2_all_games.pgn",
+      "sizeBytes": 10151378
+    },
+    "ccobb09": {
+      "gamesCount": 132,
+      "file": "ccobb09_all_games.pgn",
+      "sizeBytes": 292460
+    }
+  }
+}
