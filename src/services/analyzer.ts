@@ -2,6 +2,29 @@ import { Chess, type Move } from 'chess.js';
 import type { GameAnalysisResult, GameHeaders, MoveAnalysis, MoveClassification } from '../types/chess';
 import { stockfishService, type PositionEval } from './stockfishService';
 
+import openingBookRaw from '../data/openingBook.json';
+
+const openingBook: Record<string, string> = openingBookRaw as Record<string, string>;
+
+export function isBookPosition(fen: string): boolean {
+  if (!fen) return false;
+  const fenKey = fen.split(' ').slice(0, 4).join(' ');
+  return fenKey in openingBook;
+}
+
+export function getOpeningName(fen: string): string | undefined {
+  if (!fen) return undefined;
+  const fenKey = fen.split(' ').slice(0, 4).join(' ');
+  return openingBook[fenKey];
+}
+
+/**
+ * Calculates accuracy percentage (0 to 100) for a single move based on standard Lichess curve.
+ */
+export function calculateMoveAccuracy(winChanceDelta: number): number {
+  return Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * winChanceDelta) - 3.1669));
+}
+
 /**
  * Calculates win chance percentage (0 to 100) from centipawn evaluation.
  * Formula used by Lichess and modern chess statistics.
@@ -87,7 +110,8 @@ export function classifyMove(
   isMateAfter: boolean,
   isSacrifice: boolean,
   playedMove: Move,
-  ply: number
+  _ply: number,
+  isBook = false
 ): { classification: MoveClassification; centipawnLoss: number; winChanceDelta: number; explanation: string } {
   const playerEvalBefore = color === 'w' ? evalBefore : -evalBefore;
   const playerEvalAfter = color === 'w' ? evalAfter : -evalAfter;
@@ -106,11 +130,11 @@ export function classifyMove(
     };
   }
 
-  if (ply <= 4 && winChanceDelta <= 1.0) {
+  if (isBook) {
     return {
       classification: 'book',
-      centipawnLoss,
-      winChanceDelta,
+      centipawnLoss: Math.min(centipawnLoss, 20),
+      winChanceDelta: Math.min(winChanceDelta, 1.0),
       explanation: 'Book move. Established opening theory.',
     };
   }
@@ -250,10 +274,8 @@ export async function analyzePgn(
     book: 0,
   };
 
-  let whiteWinLossSum = 0;
-  let whiteCount = 0;
-  let blackWinLossSum = 0;
-  let blackCount = 0;
+  const whiteAccuracyScores: number[] = [];
+  const blackAccuracyScores: number[] = [];
 
   let lastEval: PositionEval = {
     score: 20,
@@ -351,6 +373,8 @@ export async function analyzePgn(
       capturedVal < movedVal &&
       (!isDefended || (movedVal >= 5 && capturedVal <= 1));
 
+    const isBook = isBookPosition(fenAfter);
+
     const classificationData = classifyMove(
       isBestMove,
       color,
@@ -360,17 +384,18 @@ export async function analyzePgn(
       evalAfter.isMate,
       isSacrifice,
       move,
-      ply
+      ply,
+      isBook
     );
+
+    const moveAcc = calculateMoveAccuracy(classificationData.winChanceDelta);
 
     if (color === 'w') {
       whiteStats[classificationData.classification]++;
-      whiteWinLossSum += classificationData.winChanceDelta;
-      whiteCount++;
+      whiteAccuracyScores.push(moveAcc);
     } else {
       blackStats[classificationData.classification]++;
-      blackWinLossSum += classificationData.winChanceDelta;
-      blackCount++;
+      blackAccuracyScores.push(moveAcc);
     }
 
     moveAnalyses.push({
@@ -402,11 +427,14 @@ export async function analyzePgn(
     });
   }
 
-  const whiteAvgWinLoss = whiteCount > 0 ? whiteWinLossSum / whiteCount : 0;
-  const blackAvgWinLoss = blackCount > 0 ? blackWinLossSum / blackCount : 0;
-
-  const whiteAccuracy = Math.max(10, Math.min(100, Math.round((100 - whiteAvgWinLoss * 1.5) * 10) / 10));
-  const blackAccuracy = Math.max(10, Math.min(100, Math.round((100 - blackAvgWinLoss * 1.5) * 10) / 10));
+  const whiteAccuracy =
+    whiteAccuracyScores.length > 0
+      ? Math.round((whiteAccuracyScores.reduce((a, b) => a + b, 0) / whiteAccuracyScores.length) * 10) / 10
+      : 100;
+  const blackAccuracy =
+    blackAccuracyScores.length > 0
+      ? Math.round((blackAccuracyScores.reduce((a, b) => a + b, 0) / blackAccuracyScores.length) * 10) / 10
+      : 100;
 
   return {
     headers,
