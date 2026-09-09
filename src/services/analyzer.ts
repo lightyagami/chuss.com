@@ -342,7 +342,14 @@ export async function analyzePgn(
     const capturedVal = move.captured ? pieceValues[move.captured] || 0 : 0;
     const opponentColor = color === 'w' ? 'b' : 'w';
     const isAttacked = replayChess.isAttacked(move.to as any, opponentColor as any);
-    const isSacrifice = movedVal >= 3 && isAttacked && capturedVal < movedVal;
+    const isDefended = replayChess.isAttacked(move.to as any, color as any);
+    // True sacrifice: major/minor piece moves into attack, captures less than moved value,
+    // and is either completely undefended or moved a higher piece (Q/R) into attack by lower piece
+    const isSacrifice =
+      movedVal >= 3 &&
+      isAttacked &&
+      capturedVal < movedVal &&
+      (!isDefended || (movedVal >= 5 && capturedVal <= 1));
 
     const classificationData = classifyMove(
       isBestMove,

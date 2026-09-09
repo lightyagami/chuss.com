@@ -28,6 +28,7 @@ export const App: React.FC = () => {
   const [progress, setProgress] = useState<{ current: number; total: number; message: string } | undefined>(undefined);
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentDepth, setCurrentDepth] = useState<number>(10);
   const totalPly = analysis?.moves.length ?? 0;
 
   const [fens, setFens] = useState<string[]>(['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1']);
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
   const activeAnalysisIdRef = useRef<number>(0);
 
   const runAnalysis = useCallback(async (pgnString: string, depth = 10) => {
+    setCurrentDepth(depth);
     const thisAnalysisId = ++activeAnalysisIdRef.current;
     setIsAnalyzing(true);
     setIsPlaying(false);
@@ -189,7 +191,7 @@ export const App: React.FC = () => {
         onFlipBoard={handleFlipBoard}
         showDualBoard={showDualBoard}
         onToggleDualBoard={() => setShowDualBoard((prev) => !prev)}
-        onReanalyze={() => runAnalysis(pgn, 10)}
+        onReanalyze={() => runAnalysis(pgn, currentDepth)}
         isAnalyzing={isAnalyzing}
       />
 

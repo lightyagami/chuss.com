@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-function fetchJson(url) {
-  return new Promise((resolve, reject) => {
+function fetchJsonOnce(url) {
+  return new Promise((resolve) => {
     https.get(url, { headers: { 'User-Agent': 'ChessMoveAnalyzerFullArchiver/1.0' } }, (res) => {
       let data = '';
       res.on('data', c => data += c);
@@ -16,6 +16,18 @@ function fetchJson(url) {
       });
     }).on('error', () => resolve(null));
   });
+}
+
+async function fetchJson(url, maxRetries = 2) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const data = await fetchJsonOnce(url);
+    if (data !== null) return data;
+    if (attempt < maxRetries) {
+      const backoffMs = (attempt + 1) * 800;
+      await new Promise(r => setTimeout(r, backoffMs));
+    }
+  }
+  return null;
 }
 
 // Concurrency pool runner
@@ -41,9 +53,13 @@ async function downloadUserGames(username) {
 
   const monthlyResults = await pMap(urls, async (url, idx) => {
     const monthData = await fetchJson(url);
-    const games = monthData?.games || [];
-    const pgns = games.map(g => g.pgn).filter(Boolean);
     const monthStr = url.split('/').slice(-2).join('-');
+    if (!monthData) {
+      console.warn(`[${username}] WARNING: Failed to fetch month ${monthStr} (${idx + 1}/${urls.length}) after retries.`);
+      return [];
+    }
+    const games = monthData.games || [];
+    const pgns = games.map(g => g.pgn).filter(Boolean);
     console.log(`[${username}] Month ${monthStr} (${idx + 1}/${urls.length}): ${pgns.length} games`);
     return pgns;
   }, 4);

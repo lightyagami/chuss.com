@@ -4,7 +4,7 @@ const https = require('https');
 const { Chess } = require('chess.js');
 
 function fetchJson(url) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     https.get(url, { headers: { 'User-Agent': 'ChessMoveAnalyzerTest/1.0' } }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -12,10 +12,10 @@ function fetchJson(url) {
         try {
           resolve(JSON.parse(data));
         } catch (e) {
-          reject(e);
+          resolve(null);
         }
       });
-    }).on('error', reject);
+    }).on('error', () => resolve(null));
   });
 }
 

@@ -33,8 +33,8 @@ export const PgnModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleFetchUserGame = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFetchUserGame = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
     setError(null);
     setFetchSuccess(null);
 
@@ -48,8 +48,10 @@ export const PgnModal: React.FC<Props> = ({
     try {
       const { pgn: fetchedPgn, game } = await fetchLatestGameByUsername(cleanUser);
       setPgnText(fetchedPgn);
+      const whiteRating = game.white.rating !== undefined ? game.white.rating : 'unrated';
+      const blackRating = game.black.rating !== undefined ? game.black.rating : 'unrated';
       setFetchSuccess(
-        `Fetched latest game: ${game.white.username} (${game.white.rating}) vs ${game.black.username} (${game.black.rating})`
+        `Fetched latest game: ${game.white.username} (${whiteRating}) vs ${game.black.username} (${blackRating})`
       );
     } catch (err: any) {
       setError(err?.message || 'Failed to fetch game from Chess.com.');
@@ -136,6 +138,13 @@ export const PgnModal: React.FC<Props> = ({
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleFetchUserGame();
+                  }
+                }}
                 placeholder="e.g. demonexe2 or 100LoseStreak"
                 className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 transition"
               />

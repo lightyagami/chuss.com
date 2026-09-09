@@ -25,6 +25,7 @@ export class StockfishService {
   private currentEval: Partial<PositionEval> = {};
   private jobIdCounter = 0;
   private readyCallbacks: (() => void)[] = [];
+  private hasReceivedScore = false;
 
   constructor() {
     this.initWorker();
@@ -63,6 +64,14 @@ export class StockfishService {
     }
     this.isReady = false;
     this.isSyncing = false;
+
+    const pendingJobs = [...this.queue];
+    this.queue = [];
+    for (const job of pendingJobs) {
+      clearTimeout(job.timeoutId);
+      job.resolve(this.heuristicFallbackEval(job.fen));
+    }
+
     if (this.activeJob) {
       clearTimeout(this.activeJob.timeoutId);
       const job = this.activeJob;
@@ -90,6 +99,7 @@ export class StockfishService {
     if (this.isSyncing) return;
 
     if (line.startsWith('info') && line.includes('score')) {
+      this.hasReceivedScore = true;
       const depthMatch = line.match(/\bdepth\s+(\d+)/);
       const cpMatch = line.match(/\bscore\s+cp\s+(-?\d+)/);
       const mateMatch = line.match(/\bscore\s+mate\s+(-?\d+)/);
@@ -119,6 +129,18 @@ export class StockfishService {
       const job = this.activeJob;
       clearTimeout(job.timeoutId);
       this.activeJob = null;
+
+      if (!this.hasReceivedScore) {
+        const fallback = this.heuristicFallbackEval(job.fen);
+        const result: PositionEval = {
+          ...fallback,
+          bestMoveUci: bestMoveUci || fallback.bestMoveUci,
+          depth: job.depth,
+        };
+        job.resolve(result);
+        this.processQueue();
+        return;
+      }
 
       let score = this.currentEval.score ?? 0;
       let mateIn = this.currentEval.mateIn;
@@ -154,6 +176,7 @@ export class StockfishService {
     if (!job) return;
 
     this.activeJob = job;
+    this.hasReceivedScore = false;
     this.currentEval = {
       score: 0,
       isMate: false,

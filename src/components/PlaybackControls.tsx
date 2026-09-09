@@ -66,7 +66,7 @@ export const PlaybackControls: React.FC<Props> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onPrev, onNext, onJumpToStart, onJumpToEnd, onTogglePlay, onFlipBoard]);
+  }, [disabled, onPrev, onNext, onJumpToStart, onJumpToEnd, onTogglePlay, onFlipBoard]);
 
   return (
     <div className="flex flex-col gap-2 w-full bg-white border border-slate-200 rounded-lg p-3 shadow-xs">

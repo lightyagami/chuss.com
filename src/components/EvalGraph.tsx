@@ -76,8 +76,8 @@ export const EvalGraph: React.FC<Props> = ({
     if (!containerRef.current || totalMoves === 0) return 0;
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const percent = mouseX / rect.width;
-    const targetPly = Math.round(percent * totalMoves);
+    const stepX = rect.width / Math.max(1, totalMoves);
+    const targetPly = Math.round(mouseX / stepX);
     return Math.max(0, Math.min(totalMoves, targetPly));
   }, [totalMoves]);
 
@@ -279,9 +279,9 @@ export const EvalGraph: React.FC<Props> = ({
         {}
         {activeHoverMove && hoverPly !== null && (
           <div
-            className="pointer-events-none absolute top-2 z-20 -translate-x-1/2 glass-panel-subtle px-2.5 py-1 rounded-lg text-xs font-mono text-slate-200 border border-white/15 shadow-xl flex items-center gap-1.5"
+            className="pointer-events-none absolute top-2 z-20 -translate-x-1/2 glass-panel-subtle px-2.5 py-1 rounded-lg text-xs font-mono text-slate-200 border border-white/15 shadow-xl flex items-center gap-1.5 whitespace-nowrap"
             style={{
-              left: `${Math.max(10, Math.min(90, (hoverPly / totalMoves) * 100))}%`,
+              left: `${Math.max(5, Math.min(95, (hoverPly / Math.max(1, totalMoves)) * 100))}%`,
             }}
           >
             <span className="font-bold text-white">

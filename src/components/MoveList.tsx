@@ -99,7 +99,7 @@ export const MoveList: React.FC<Props> = ({
 
           return (
             <div
-              key={`${pair.moveNumber}-${pair.white?.san || ''}-${pair.black?.san || ''}`}
+              key={pair.white?.ply ?? pair.black?.ply ?? pair.moveNumber}
               ref={isRowActive ? activeRowRef : null}
               className={`grid grid-cols-[44px_1fr_1fr] items-center rounded px-2 py-1 transition ${
                 pair.moveNumber % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'
