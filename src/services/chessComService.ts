@@ -2,17 +2,30 @@ export interface ChessComGame {
   url: string;
   pgn: string;
   time_control: string;
-  end_time: number;
+  end_time?: number;
   white: {
     username: string;
-    rating: number;
-    result: string;
+    rating?: number;
+    result?: string;
   };
   black: {
     username: string;
-    rating: number;
-    result: string;
+    rating?: number;
+    result?: string;
   };
+}
+
+export interface ChessComLiveGame {
+  url: string;
+  fen: string;
+  turn: 'white' | 'black';
+  move_by?: number;
+  time_control: string;
+  time_class?: string;
+  rated?: boolean;
+  pgn?: string;
+  white: string;
+  black: string;
 }
 
 export async function fetchLatestGameByUsername(username: string): Promise<{ pgn: string; game: ChessComGame }> {
@@ -67,4 +80,24 @@ export async function fetchLatestGameByUsername(username: string): Promise<{ pgn
   }
 
   throw new Error(`No games with PGN data found for "${cleanUsername}".`);
+}
+
+export async function fetchOngoingGames(username: string): Promise<ChessComLiveGame[]> {
+  const cleanUsername = username.trim().toLowerCase();
+  if (!cleanUsername) return [];
+
+  try {
+    const res = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(cleanUsername)}/games`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    return data?.games || [];
+  } catch {
+    return [];
+  }
 }

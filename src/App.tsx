@@ -13,8 +13,10 @@ import { OptimalComparison } from './components/OptimalComparison';
 import { DualBoardView } from './components/DualBoardView';
 import { AccuracySummary } from './components/AccuracySummary';
 import { PgnModal } from './components/PgnModal';
+import { LiveMatchTracker } from './components/LiveMatchTracker';
 
 export const App: React.FC = () => {
+  const [mode, setMode] = useState<'review' | 'live'>('review');
   const [pgn, setPgn] = useState<string>(DEFAULT_PGN);
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [showDualBoard, setShowDualBoard] = useState<boolean>(false);
@@ -179,8 +181,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      {}
       <Navbar
+        mode={mode}
+        onSelectMode={setMode}
         onOpenImport={() => setIsImportModalOpen(true)}
         orientation={orientation}
         onFlipBoard={handleFlipBoard}
@@ -190,139 +193,140 @@ export const App: React.FC = () => {
         isAnalyzing={isAnalyzing}
       />
 
-      {}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex flex-col gap-6">
-        {}
-        <GameHeader
-          headers={analysis?.headers || { White: 'demonexe2', Black: 'ccobb09', Result: '1-0' }}
-          whiteAccuracy={analysis?.whiteAccuracy}
-          blackAccuracy={analysis?.blackAccuracy}
-          isAnalyzing={isAnalyzing}
-          progress={progress}
-        />
-
-        {}
-        {showDualBoard ? (
-          <div className="flex flex-col gap-6">
-            <DualBoardView
-              currentMove={currentMove}
-              orientation={orientation}
-              onFlipBoard={handleFlipBoard}
+        {mode === 'live' ? (
+          <LiveMatchTracker
+            onReviewFinishedGame={(finishedPgn) => {
+              setPgn(finishedPgn);
+              setMode('review');
+              runAnalysis(finishedPgn, 10);
+            }}
+          />
+        ) : (
+          <>
+            <GameHeader
+              headers={analysis?.headers || { White: 'demonexe2', Black: 'ccobb09', Result: '1-0' }}
+              whiteAccuracy={analysis?.whiteAccuracy}
+              blackAccuracy={analysis?.blackAccuracy}
+              isAnalyzing={isAnalyzing}
+              progress={progress}
             />
 
-            {}
-            <div className="max-w-2xl mx-auto w-full">
-              <PlaybackControls
-                currentPly={currentPly}
-                totalPly={totalPly}
-                isPlaying={isPlaying}
-                onJumpToStart={handleJumpToStart}
-                onPrev={handlePrev}
-                onNext={handleNext}
-                onJumpToEnd={handleJumpToEnd}
-                onTogglePlay={handleTogglePlay}
-                onFlipBoard={handleFlipBoard}
-                orientation={orientation}
-              />
-            </div>
-
-            {}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              <OptimalComparison
-                currentMove={currentMove}
-                showDualBoard={showDualBoard}
-                onToggleDualBoard={() => setShowDualBoard(false)}
-                showBestMoveArrow={showBestMoveArrow}
-                onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
-              />
-
-              <div className="h-[420px]">
-                <MoveList
-                  moves={analysis?.moves || []}
-                  currentPly={currentPly}
-                  onSelectPly={(ply) => {
-                    setIsPlaying(false);
-                    setIsViewingOptimal(false);
-                    setCurrentPly(ply);
-                  }}
-                  whiteName={analysis?.headers.White || 'White'}
-                  blackName={analysis?.headers.Black || 'Black'}
-                />
-              </div>
-
-              {analysis && <AccuracySummary analysis={analysis} />}
-            </div>
-          </div>
-        ) : (
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {}
-            <div className="lg:col-span-7 flex flex-col items-center gap-4">
-              <ChessBoardContainer
-                fen={displayFen}
-                orientation={orientation}
-                currentMove={currentMove}
-                showBestMoveArrow={showBestMoveArrow}
-                whiteName={analysis?.headers.White || 'demonexe2'}
-                blackName={analysis?.headers.Black || 'ccobb09'}
-                whiteElo={analysis?.headers.WhiteElo || '1085'}
-                blackElo={analysis?.headers.BlackElo || '536'}
-                isViewingOptimal={isViewingOptimal}
-                onToggleViewOptimal={() => setIsViewingOptimal((prev) => !prev)}
-                hasOptimalAlternative={hasOptimalAlternative}
-              />
-
-              <div className="w-full max-w-[560px]">
-                <PlaybackControls
-                  currentPly={currentPly}
-                  totalPly={totalPly}
-                  isPlaying={isPlaying}
-                  onJumpToStart={handleJumpToStart}
-                  onPrev={handlePrev}
-                  onNext={handleNext}
-                  onJumpToEnd={handleJumpToEnd}
-                  onTogglePlay={handleTogglePlay}
-                  onFlipBoard={handleFlipBoard}
+            {showDualBoard ? (
+              <div className="flex flex-col gap-6">
+                <DualBoardView
+                  currentMove={currentMove}
                   orientation={orientation}
-                  disabled={isImportModalOpen}
+                  onFlipBoard={handleFlipBoard}
                 />
+
+                <div className="max-w-2xl mx-auto w-full">
+                  <PlaybackControls
+                    currentPly={currentPly}
+                    totalPly={totalPly}
+                    isPlaying={isPlaying}
+                    onJumpToStart={handleJumpToStart}
+                    onPrev={handlePrev}
+                    onNext={handleNext}
+                    onJumpToEnd={handleJumpToEnd}
+                    onTogglePlay={handleTogglePlay}
+                    onFlipBoard={handleFlipBoard}
+                    orientation={orientation}
+                    disabled={isImportModalOpen}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                  <OptimalComparison
+                    currentMove={currentMove}
+                    showDualBoard={showDualBoard}
+                    onToggleDualBoard={() => setShowDualBoard(false)}
+                    showBestMoveArrow={showBestMoveArrow}
+                    onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
+                  />
+
+                  <div className="h-[420px]">
+                    <MoveList
+                      moves={analysis?.moves || []}
+                      currentPly={currentPly}
+                      onSelectPly={(ply) => {
+                        setIsPlaying(false);
+                        setIsViewingOptimal(false);
+                        setCurrentPly(ply);
+                      }}
+                      whiteName={analysis?.headers.White || 'White'}
+                      blackName={analysis?.headers.Black || 'Black'}
+                    />
+                  </div>
+
+                  {analysis && <AccuracySummary analysis={analysis} />}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-7 flex flex-col items-center gap-4">
+                  <ChessBoardContainer
+                    fen={displayFen}
+                    orientation={orientation}
+                    currentMove={currentMove}
+                    showBestMoveArrow={showBestMoveArrow}
+                    whiteName={analysis?.headers.White || 'demonexe2'}
+                    blackName={analysis?.headers.Black || 'ccobb09'}
+                    whiteElo={analysis?.headers.WhiteElo || '1085'}
+                    blackElo={analysis?.headers.BlackElo || '536'}
+                    isViewingOptimal={isViewingOptimal}
+                    onToggleViewOptimal={() => setIsViewingOptimal((prev) => !prev)}
+                    hasOptimalAlternative={hasOptimalAlternative}
+                  />
 
-            {}
-            <div className="lg:col-span-5 flex flex-col gap-5">
-              {}
-              <OptimalComparison
-                currentMove={currentMove}
-                showDualBoard={showDualBoard}
-                onToggleDualBoard={() => setShowDualBoard(true)}
-                showBestMoveArrow={showBestMoveArrow}
-                onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
-              />
+                  <div className="w-full max-w-[560px]">
+                    <PlaybackControls
+                      currentPly={currentPly}
+                      totalPly={totalPly}
+                      isPlaying={isPlaying}
+                      onJumpToStart={handleJumpToStart}
+                      onPrev={handlePrev}
+                      onNext={handleNext}
+                      onJumpToEnd={handleJumpToEnd}
+                      onTogglePlay={handleTogglePlay}
+                      onFlipBoard={handleFlipBoard}
+                      orientation={orientation}
+                      disabled={isImportModalOpen}
+                    />
+                  </div>
+                </div>
 
-              {}
-              <div className="h-[300px]">
-                <MoveList
-                  moves={analysis?.moves || []}
-                  currentPly={currentPly}
-                  onSelectPly={(ply) => {
-                    setIsPlaying(false);
-                    setIsViewingOptimal(false);
-                    setCurrentPly(ply);
-                  }}
-                  whiteName={analysis?.headers.White || 'White'}
-                  blackName={analysis?.headers.Black || 'Black'}
-                />
+                <div className="lg:col-span-5 flex flex-col gap-5">
+                  <OptimalComparison
+                    currentMove={currentMove}
+                    showDualBoard={showDualBoard}
+                    onToggleDualBoard={() => setShowDualBoard(true)}
+                    showBestMoveArrow={showBestMoveArrow}
+                    onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
+                  />
+
+                  <div className="h-[300px]">
+                    <MoveList
+                      moves={analysis?.moves || []}
+                      currentPly={currentPly}
+                      onSelectPly={(ply) => {
+                        setIsPlaying(false);
+                        setIsViewingOptimal(false);
+                        setCurrentPly(ply);
+                      }}
+                      whiteName={analysis?.headers.White || 'White'}
+                      blackName={analysis?.headers.Black || 'Black'}
+                    />
+                  </div>
+
+                  {analysis && <AccuracySummary analysis={analysis} />}
+                </div>
               </div>
-
-              {}
-              {analysis && <AccuracySummary analysis={analysis} />}
-            </div>
-          </div>
+            )}
+          </>
         )}
       </main>
 
-      {}
       <PgnModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
