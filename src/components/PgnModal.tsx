@@ -212,9 +212,10 @@ export const PgnModal: React.FC<Props> = ({
 
             <div className="flex items-center gap-1.5">
               {[
-                { label: 'Depth 8', value: 8 },
                 { label: 'Depth 10', value: 10 },
                 { label: 'Depth 12', value: 12 },
+                { label: 'Depth 14', value: 14 },
+                { label: 'Depth 16', value: 16 },
               ].map((d) => (
                 <button
                   key={d.value}

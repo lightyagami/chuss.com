@@ -161,9 +161,10 @@ export class StockfishService {
       depth: 0,
     };
 
+    const timeoutMs = Math.max(4000, job.depth * 700);
     job.timeoutId = setTimeout(() => {
       this.handleJobTimeout(job.id);
-    }, 3500);
+    }, timeoutMs);
 
     if (this.worker) {
       this.worker.postMessage(`position fen ${job.fen}`);
