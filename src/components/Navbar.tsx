@@ -33,7 +33,7 @@ export const Navbar: React.FC<Props> = ({
               Chess Move Analyzer
             </h1>
             <p className="text-[11px] text-slate-500">
-              Stockfish Engine &amp; Optimal Play Comparison
+              Stockfish Engine
             </p>
           </div>
         </div>
