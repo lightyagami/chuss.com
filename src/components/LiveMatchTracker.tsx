@@ -38,6 +38,7 @@ export const LiveMatchTracker: React.FC<Props> = ({ onReviewFinishedGame }) => {
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef<boolean>(true);
   const activeGameUrlRef = useRef<string>('');
+  const activeGamePgnRef = useRef<string>('');
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -70,7 +71,7 @@ export const LiveMatchTracker: React.FC<Props> = ({ onReviewFinishedGame }) => {
       if (!isMountedRef.current) return;
 
       if (ongoingGames.length === 0) {
-        if (activeGameUrlRef.current && activeGame?.pgn) {
+        if (activeGameUrlRef.current && activeGamePgnRef.current) {
           setStatusMessage('Game finished! You can load it for complete post-match review.');
         } else {
           setStatusMessage(`No active live game found for "${username}". Waiting for next game...`);
@@ -79,6 +80,7 @@ export const LiveMatchTracker: React.FC<Props> = ({ onReviewFinishedGame }) => {
         const game = ongoingGames[0];
         setActiveGame(game);
         activeGameUrlRef.current = game.url;
+        activeGamePgnRef.current = game.pgn || '';
         setStatusMessage(`Live Match Active: ${game.time_class || 'game'} (${game.time_control})`);
 
         const whiteUser = game.white.split('/').pop() || 'White';
@@ -114,7 +116,7 @@ export const LiveMatchTracker: React.FC<Props> = ({ onReviewFinishedGame }) => {
         pollTimerRef.current = setTimeout(pollGame, 3000);
       }
     }
-  }, [username, isPolling, activeGame, evaluateLiveFen]);
+  }, [username, isPolling, evaluateLiveFen]);
 
   useEffect(() => {
     if (isPolling) {

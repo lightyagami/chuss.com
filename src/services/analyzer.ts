@@ -166,11 +166,14 @@ export function classifyMove(
     };
   }
 
-  if (winChanceDelta >= 20 || centipawnLoss >= 250 || (isMateBefore && !isMateAfter)) {
+  const lostForcedMate = isMateBefore && playerEvalBefore > 50000 && (!isMateAfter || playerEvalAfter < 50000);
+  const allowedOpponentMate = !isMateBefore && isMateAfter && playerEvalAfter < -50000;
+
+  if (winChanceDelta >= 20 || centipawnLoss >= 250 || lostForcedMate || allowedOpponentMate) {
     let explanation = `Blunder! Severely compromises position (eval dropped ${(centipawnLoss / 100).toFixed(1)} pawns).`;
-    if (isMateBefore && playerEvalBefore > 50000 && playerEvalAfter < 50000) {
+    if (lostForcedMate) {
       explanation = 'Blunder! Missed a forced checkmate sequence.';
-    } else if (!isMateBefore && isMateAfter && playerEvalAfter < -50000) {
+    } else if (allowedOpponentMate) {
       explanation = 'Blunder! Allows the opponent a forced checkmate.';
     }
 

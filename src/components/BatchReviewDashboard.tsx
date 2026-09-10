@@ -16,17 +16,27 @@ interface AnalyzedMatch {
 
 export const BatchReviewDashboard: React.FC<Props> = ({ onSelectGameToReview }) => {
   const [username, setUsername] = useState<string>('demonexe2');
+  const [searchedUser, setSearchedUser] = useState<string>('demonexe2');
   const [gameCount, setGameCount] = useState<number>(5);
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [progressMsg, setProgressMsg] = useState<string>('');
   const [matches, setMatches] = useState<AnalyzedMatch[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const isCancelledRef = React.useRef<boolean>(false);
+
+  React.useEffect(() => {
+    return () => {
+      isCancelledRef.current = true;
+    };
+  }, []);
 
   const handleStartBatchAnalysis = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = username.trim();
     if (!cleanUser) return;
 
+    isCancelledRef.current = false;
+    setSearchedUser(cleanUser);
     setError(null);
     setIsFetching(true);
     setMatches([]);
@@ -35,6 +45,8 @@ export const BatchReviewDashboard: React.FC<Props> = ({ onSelectGameToReview }) 
       setProgressMsg(`Fetching recent ${gameCount} games from Chess.com...`);
       const recentGames = await fetchRecentGamesByUsername(cleanUser, gameCount);
 
+      if (isCancelledRef.current) return;
+
       if (recentGames.length === 0) {
         throw new Error(`No games found for "${cleanUser}".`);
       }
@@ -42,10 +54,16 @@ export const BatchReviewDashboard: React.FC<Props> = ({ onSelectGameToReview }) 
       const analyzedList: AnalyzedMatch[] = [];
 
       for (let i = 0; i < recentGames.length; i++) {
+        if (isCancelledRef.current) break;
         const g = recentGames[i];
         setProgressMsg(`Analyzing match ${i + 1} of ${recentGames.length}...`);
         try {
-          const result = await analyzePgn(g.pgn, 10);
+          const result = await analyzePgn(
+            g.pgn,
+            10,
+            undefined,
+            () => isCancelledRef.current
+          );
           let opening = 'Standard Opening';
           for (let m = Math.min(15, result.moves.length - 1); m >= 0; m--) {
             const name = getOpeningName(result.moves[m]?.fenAfter);
@@ -59,31 +77,38 @@ export const BatchReviewDashboard: React.FC<Props> = ({ onSelectGameToReview }) 
             analysis: result,
             opening,
           });
-        } catch (e) {
+        } catch (e: any) {
+          if (e?.message === 'Analysis cancelled') break;
           console.warn('Failed analyzing game in batch:', e);
         }
       }
 
-      setMatches(analyzedList);
+      if (!isCancelledRef.current) {
+        setMatches(analyzedList);
+      }
     } catch (err: any) {
-      setError(err?.message || 'Failed to complete batch analysis.');
+      if (!isCancelledRef.current) {
+        setError(err?.message || 'Failed to complete batch analysis.');
+      }
     } finally {
-      setIsFetching(false);
-      setProgressMsg('');
+      if (!isCancelledRef.current) {
+        setIsFetching(false);
+        setProgressMsg('');
+      }
     }
   };
 
   const avgAccuracy = matches.length > 0
     ? Math.round(
         matches.reduce((sum, m) => {
-          const isWhite = m.game.white.username.toLowerCase() === username.toLowerCase();
+          const isWhite = m.game.white.username.toLowerCase() === searchedUser.toLowerCase();
           return sum + (isWhite ? m.analysis.whiteAccuracy : m.analysis.blackAccuracy);
         }, 0) / matches.length
       )
     : 0;
 
   const totalBlunders = matches.reduce((sum, m) => {
-    const isWhite = m.game.white.username.toLowerCase() === username.toLowerCase();
+    const isWhite = m.game.white.username.toLowerCase() === searchedUser.toLowerCase();
     const stats = isWhite ? m.analysis.whiteStats : m.analysis.blackStats;
     return sum + (stats.blunder || 0);
   }, 0);

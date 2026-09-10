@@ -28,6 +28,10 @@ export const OpponentScout: React.FC<Props> = ({ onReviewMatch }) => {
         fetchRecentGamesByUsername(clean, 15),
       ]);
 
+      if (!p) {
+        throw new Error(`User "${clean}" not found on Chess.com.`);
+      }
+
       if (g.length === 0) {
         throw new Error(`No recent games found for "${clean}".`);
       }
@@ -42,8 +46,8 @@ export const OpponentScout: React.FC<Props> = ({ onReviewMatch }) => {
   };
 
   const scoutStats = React.useMemo(() => {
-    if (games.length === 0) return null;
-    const clean = targetUser.toLowerCase();
+    if (games.length === 0 || !profile) return null;
+    const clean = profile.username.toLowerCase();
 
     const whiteOpenings: Record<string, number> = {};
     const blackOpenings: Record<string, number> = {};
@@ -97,7 +101,7 @@ export const OpponentScout: React.FC<Props> = ({ onReviewMatch }) => {
       topWhite: sortOps(whiteOpenings).slice(0, 3),
       topBlack: sortOps(blackOpenings).slice(0, 3),
     };
-  }, [games, targetUser]);
+  }, [games, profile]);
 
   return (
     <div className="flex flex-col gap-6 w-full">

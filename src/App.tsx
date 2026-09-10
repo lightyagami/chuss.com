@@ -174,6 +174,9 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (mode !== 'review' || isImportModalOpen || isQuizModalOpen) {
+        return;
+      }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -194,7 +197,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrev, handleNext, handleFlipBoard]);
+  }, [mode, isImportModalOpen, isQuizModalOpen, handlePrev, handleNext, handleFlipBoard]);
 
   const currentMove: MoveAnalysis | undefined =
     currentPly > 0 && analysis?.moves ? analysis.moves[currentPly - 1] : undefined;

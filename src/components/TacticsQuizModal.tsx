@@ -58,16 +58,21 @@ export const TacticsQuizModal: React.FC<Props> = ({ isOpen, onClose, analysis })
 
   const currentPuzzle = puzzles[currentIndex];
 
+  const [solvedPuzzleIds, setSolvedPuzzleIds] = useState<Set<number>>(() => new Set());
+
   const handlePieceDrop = ({ sourceSquare, targetSquare }: { sourceSquare: string; targetSquare: string | null }) => {
     if (!currentPuzzle || userMoveState === 'correct') return false;
     if (!targetSquare) return false;
 
     try {
       const c = new Chess(boardFen || currentPuzzle.fenBefore);
+      const promoPiece = currentPuzzle.bestSan.includes('=')
+        ? (currentPuzzle.bestSan.split('=')[1]?.[0]?.toLowerCase() || 'q')
+        : 'q';
       const move = c.move({
         from: sourceSquare,
         to: targetSquare,
-        promotion: 'q',
+        promotion: promoPiece,
       });
 
       if (!move) return false;
@@ -75,7 +80,10 @@ export const TacticsQuizModal: React.FC<Props> = ({ isOpen, onClose, analysis })
       if (sourceSquare === currentPuzzle.bestFrom && targetSquare === currentPuzzle.bestTo) {
         setBoardFen(c.fen());
         setUserMoveState('correct');
-        setScore((s) => s + 10);
+        if (!solvedPuzzleIds.has(currentPuzzle.id)) {
+          setSolvedPuzzleIds((prev) => new Set(prev).add(currentPuzzle.id));
+          setScore((s) => s + (showSolutionArrow ? 2 : 10));
+        }
         return true;
       } else {
         setUserMoveState('incorrect');

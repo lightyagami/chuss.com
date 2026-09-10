@@ -37,6 +37,7 @@ export const WhatIfExplorer: React.FC<Props> = ({
 
     return () => {
       isCancelled = true;
+      multiPvEngine.cancel();
     };
   }, [fen]);
 
