@@ -33,11 +33,13 @@ export const VideoExportModal: React.FC<Props> = ({
     percent: 0,
     message: '',
   });
-  const [videos, setVideos] = useState<Partial<Record<VideoExportMode, RenderedVideo>>>({});
+  const [videos, setVideos] = useState<Record<string, RenderedVideo>>({});
   const [error, setError] = useState<string | null>(null);
 
   const isCancelledRef = useRef<boolean>(false);
-  const videosRef = useRef<Partial<Record<VideoExportMode, RenderedVideo>>>({});
+  const videosRef = useRef<Record<string, RenderedVideo>>({});
+
+  const cacheKey = `${mode}_${scope}`;
 
   useEffect(() => {
     videosRef.current = videos;
@@ -53,7 +55,7 @@ export const VideoExportModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const currentVideo = videos[mode] || null;
+  const currentVideo = videos[cacheKey] || null;
 
   const handleClose = () => {
     Object.values(videosRef.current).forEach((v) => {
@@ -69,11 +71,11 @@ export const VideoExportModal: React.FC<Props> = ({
   const handleStartExport = async () => {
     if (!analysis) return;
 
-    if (videos[mode]?.url) {
-      URL.revokeObjectURL(videos[mode]!.url);
+    if (videos[cacheKey]?.url) {
+      URL.revokeObjectURL(videos[cacheKey]!.url);
       setVideos((prev) => {
         const next = { ...prev };
-        delete next[mode];
+        delete next[cacheKey];
         return next;
       });
     }
@@ -102,7 +104,7 @@ export const VideoExportModal: React.FC<Props> = ({
       const url = URL.createObjectURL(blob);
       setVideos((prev) => ({
         ...prev,
-        [mode]: { blob, url },
+        [cacheKey]: { blob, url },
       }));
     } catch (err: unknown) {
       if (!isCancelledRef.current) {
@@ -122,7 +124,8 @@ export const VideoExportModal: React.FC<Props> = ({
     if (!currentVideo || !analysis) return;
     const white = (analysis.headers.White || 'White').replace(/\s+/g, '_');
     const black = (analysis.headers.Black || 'Black').replace(/\s+/g, '_');
-    const filename = `${white}_vs_${black}_${mode}.webm`;
+    const scopeSuffix = scope === 'clip' ? `_clip_move${currentPly}` : '';
+    const filename = `${white}_vs_${black}_${mode}${scopeSuffix}.webm`;
     downloadVideoBlob(currentVideo.blob, filename);
   };
 

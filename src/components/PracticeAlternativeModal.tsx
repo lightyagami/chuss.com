@@ -60,10 +60,13 @@ export const PracticeAlternativeModal: React.FC<Props> = ({
 
     try {
       const chess = new Chess(fen);
+      const promoPiece = (move.bestMoveSan && move.bestMoveSan.includes('='))
+        ? (move.bestMoveSan.split('=')[1]?.[0]?.toLowerCase() || 'q')
+        : 'q';
       const attemptedMove = chess.move({
         from: sourceSquare,
         to: targetSquare,
-        promotion: 'q',
+        promotion: promoPiece,
       });
 
       if (!attemptedMove) return false;
