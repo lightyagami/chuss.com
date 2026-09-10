@@ -100,6 +100,23 @@ export async function exportMatchSummaryCard({
     }
   }
 
+  // Draw board coordinates
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  for (let i = 0; i < 8; i++) {
+    const rankLabel = orientation === 'white' ? `${8 - i}` : `${i + 1}`;
+    const fileLabel = orientation === 'white' ? String.fromCharCode(97 + i) : String.fromCharCode(104 - i);
+
+    ctx.fillStyle = (i % 2 === 0) ? darkColor : lightColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(rankLabel, boardX + 4, boardY + i * squareSize + 3);
+
+    ctx.fillStyle = ((7 + i) % 2 === 0) ? darkColor : lightColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(fileLabel, boardX + (i + 1) * squareSize - 4, boardY + boardSize - 3);
+  }
+
   const infoX = 600;
   let cursorY = 75;
 

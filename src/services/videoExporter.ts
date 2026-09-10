@@ -647,18 +647,6 @@ export async function exportGameplayVideo({
   const recorder = mimeType ? new MediaRecorder(combinedStream, { mimeType }) : new MediaRecorder(combinedStream);
   const chunks: Blob[] = [];
 
-  recorder.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) {
-      chunks.push(e.data);
-    }
-  };
-
-  recorder.start();
-
-  const subTitle = mode === 'actual'
-    ? 'Replay of Actual Game with Evaluation'
-    : 'Stockfish Optimal Continuation Line';
-
   let singleFrames = !isDual
     ? (mode === 'actual' ? buildActualFrames(analysis) : buildOptimalFrames(analysis))
     : [];
@@ -678,6 +666,25 @@ export async function exportGameplayVideo({
       }
     }
   }
+
+  const subTitle = mode === 'actual'
+    ? 'Replay of Actual Game with Evaluation'
+    : 'Stockfish Optimal Continuation Line';
+
+  // Draw initial frame immediately so canvasStream has a painted frame
+  if (isDual && dualFrames.length > 0) {
+    drawDualFrame(ctx, width, height, analysis, dualFrames[0], orientation);
+  } else if (!isDual && singleFrames.length > 0) {
+    drawSingleFrame(ctx, width, height, analysis, singleFrames[0], orientation, subTitle);
+  }
+
+  recorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) {
+      chunks.push(e.data);
+    }
+  };
+
+  recorder.start();
 
   const totalFrames = isDual ? dualFrames.length : singleFrames.length;
 

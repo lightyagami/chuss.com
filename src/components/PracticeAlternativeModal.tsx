@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { X, CheckCircle2, RotateCcw, Sparkles, HelpCircle, ArrowRight } from 'lucide-react';
@@ -22,8 +22,21 @@ export const PracticeAlternativeModal: React.FC<Props> = ({
   const [status, setStatus] = useState<'playing' | 'solved' | 'wrong'>('playing');
   const [message, setMessage] = useState<string>('Find and play the optimal move for this position.');
   const [showHint, setShowHint] = useState<boolean>(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  React.useEffect(() => {
+  const clearPendingTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => clearPendingTimeout();
+  }, []);
+
+  useEffect(() => {
+    clearPendingTimeout();
     if (move?.fenBefore) {
       setFen(move.fenBefore);
       setStatus('playing');
@@ -35,6 +48,7 @@ export const PracticeAlternativeModal: React.FC<Props> = ({
   if (!isOpen || !move) return null;
 
   const handleReset = () => {
+    clearPendingTimeout();
     setFen(move.fenBefore);
     setStatus('playing');
     setMessage('Find and play the optimal move for this position.');
@@ -65,7 +79,7 @@ export const PracticeAlternativeModal: React.FC<Props> = ({
         setMessage(`Brilliant! You found the optimal move: ${attemptedMove.san}`);
 
         if (move.optimalLine && move.optimalLine.length > 1) {
-          setTimeout(() => {
+          timeoutRef.current = setTimeout(() => {
             try {
               const counter = move.optimalLine[1];
               const counterRes = chess.move(counter);
@@ -82,7 +96,7 @@ export const PracticeAlternativeModal: React.FC<Props> = ({
         setStatus('wrong');
         soundEffects.playBlunder();
         setMessage(`Not quite. ${attemptedMove.san} is not the best move. Try again!`);
-        setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
           setFen(move.fenBefore);
           setStatus('playing');
         }, 800);
