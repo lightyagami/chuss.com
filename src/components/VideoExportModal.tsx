@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Play, Download, Film, Sparkles, Columns, CheckCircle2, AlertCircle, Volume2, VolumeX } from 'lucide-react';
+import { X, Play, Download, Film, Sparkles, Columns, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { GameAnalysisResult } from '../types/chess';
 import { exportGameplayVideo, downloadVideoBlob, type VideoExportMode } from '../services/videoExporter';
 
@@ -23,7 +23,6 @@ export const VideoExportModal: React.FC<Props> = ({
 }) => {
   const [mode, setMode] = useState<VideoExportMode>('actual');
   const [speed, setSpeed] = useState<number>(1.0);
-  const [includeAudio, setIncludeAudio] = useState<boolean>(true);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [progress, setProgress] = useState<{ current: number; total: number; percent: number; message: string }>({
     current: 0,
@@ -86,7 +85,7 @@ export const VideoExportModal: React.FC<Props> = ({
         mode,
         secondsPerMove: speed,
         orientation,
-        includeAudio,
+        includeAudio: true,
         onProgress: (p) => setProgress(p),
         isCancelled: () => isCancelledRef.current,
       });
@@ -223,60 +222,30 @@ export const VideoExportModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
-                Animation Speed (Pace per move)
-              </label>
-              <div className="flex items-center gap-2">
-                {[
-                  { label: 'Fast (0.6s)', val: 0.6 },
-                  { label: 'Normal (1.0s)', val: 1.0 },
-                  { label: 'Relaxed (1.5s)', val: 1.5 },
-                ].map((s) => (
-                  <button
-                    key={s.val}
-                    type="button"
-                    disabled={isExporting}
-                    onClick={() => setSpeed(s.val)}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
-                      speed === s.val
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-transparent font-semibold shadow-xs'
-                        : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-300'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
-                Audio Sound Effects
-              </label>
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => setIncludeAudio(!includeAudio)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
-                  includeAudio
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200'
-                    : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-300'
-                }`}
-              >
-                {includeAudio ? (
-                  <>
-                    <Volume2 size={15} className="text-indigo-600 dark:text-indigo-400" />
-                    <span>Include Sound Effects (Moves, Captures, Checks)</span>
-                  </>
-                ) : (
-                  <>
-                    <VolumeX size={15} className="text-slate-400" />
-                    <span>Muted (No Audio Track)</span>
-                  </>
-                )}
-              </button>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+              Animation Speed (Pace per move)
+            </label>
+            <div className="flex items-center gap-2">
+              {[
+                { label: 'Fast (0.6s)', val: 0.6 },
+                { label: 'Normal (1.0s)', val: 1.0 },
+                { label: 'Relaxed (1.5s)', val: 1.5 },
+              ].map((s) => (
+                <button
+                  key={s.val}
+                  type="button"
+                  disabled={isExporting}
+                  onClick={() => setSpeed(s.val)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
+                    speed === s.val
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-transparent font-semibold shadow-xs'
+                      : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-300'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 

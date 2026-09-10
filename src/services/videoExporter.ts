@@ -115,13 +115,15 @@ function buildOptimalFrames(analysis: GameAnalysisResult): FrameData[] {
 
   let diverged = false;
 
-  for (const m of analysis.moves) {
+  for (let moveIdx = 0; moveIdx < analysis.moves.length; moveIdx++) {
+    const m = analysis.moves[moveIdx];
     const isImperfect = m.classification && ['inaccuracy', 'mistake', 'blunder', 'missed_win'].includes(m.classification);
 
-    if (!diverged && isImperfect && m.bestMoveSan) {
+    if (!diverged && isImperfect && (m.bestMoveSan || (m.optimalLine && m.optimalLine.length > 0))) {
       diverged = true;
+      const initialMoveSan = m.bestMoveSan || m.optimalLine[0];
       try {
-        const moveRes = currentChess.move(m.bestMoveSan);
+        const moveRes = currentChess.move(initialMoveSan);
         if (moveRes) {
           frames.push({
             ply: m.ply,
@@ -139,6 +141,32 @@ function buildOptimalFrames(analysis: GameAnalysisResult): FrameData[] {
             isCapture: moveRes.san.includes('x'),
             isCheck: moveRes.san.includes('+') || moveRes.san.includes('#'),
           });
+
+          // Follow the engine principal variation line if available
+          if (m.optimalLine && m.optimalLine.length > 1) {
+            for (let k = 1; k < m.optimalLine.length && frames.length <= analysis.moves.length; k++) {
+              const pvSan = m.optimalLine[k];
+              const pvRes = currentChess.move(pvSan);
+              if (!pvRes) break;
+
+              const stepPly = m.ply + k;
+              const stepMoveNum = Math.floor((stepPly - 1) / 2) + 1;
+              frames.push({
+                ply: stepPly,
+                moveNumber: stepMoveNum,
+                color: pvRes.color,
+                san: pvRes.san,
+                from: pvRes.from,
+                to: pvRes.to,
+                fen: currentChess.fen(),
+                evalScore: m.bestMoveScore ?? m.evalScore,
+                isMate: false,
+                explanation: 'Optimal Line Continuation',
+                isCapture: pvRes.san.includes('x'),
+                isCheck: pvRes.san.includes('+') || pvRes.san.includes('#'),
+              });
+            }
+          }
           continue;
         }
       } catch {
@@ -151,10 +179,12 @@ function buildOptimalFrames(analysis: GameAnalysisResult): FrameData[] {
         if (legalMoves.length > 0) {
           const chosen = legalMoves[0];
           currentChess.move(chosen);
+          const stepPly = frames.length;
+          const stepMoveNum = Math.floor((stepPly - 1) / 2) + 1;
           frames.push({
-            ply: m.ply,
-            moveNumber: m.moveNumber,
-            color: m.color,
+            ply: stepPly,
+            moveNumber: stepMoveNum,
+            color: chosen.color,
             san: chosen.san,
             from: chosen.from,
             to: chosen.to,
@@ -473,10 +503,16 @@ function drawDualFrame(
     : `Move ${dual.actual.moveNumber}${dual.actual.color === 'w' ? '.' : '...'} ${dual.actual.san}`;
   ctx.fillText(actText, leftBoardX + boardSize / 2, footerY);
 
-  const actPawns = (dual.actual.evalScore / 100).toFixed(2);
+  let actEvalText = '';
+  if (dual.actual.isMate) {
+    actEvalText = `Mate in ${Math.abs(dual.actual.mateIn ?? 1)}`;
+  } else {
+    const actPawns = (dual.actual.evalScore / 100).toFixed(2);
+    actEvalText = `Eval: ${dual.actual.evalScore >= 0 ? '+' : ''}${actPawns}`;
+  }
   ctx.fillStyle = '#38bdf8';
   ctx.font = 'bold 13px monospace';
-  ctx.fillText(`Eval: ${dual.actual.evalScore >= 0 ? '+' : ''}${actPawns}`, leftBoardX + boardSize / 2, footerY + 22);
+  ctx.fillText(actEvalText, leftBoardX + boardSize / 2, footerY + 22);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 16px system-ui, sans-serif';
@@ -485,10 +521,16 @@ function drawDualFrame(
     : `Move ${dual.optimal.moveNumber}${dual.optimal.color === 'w' ? '.' : '...'} ${dual.optimal.san}`;
   ctx.fillText(optText, rightBoardX + boardSize / 2, footerY);
 
-  const optPawns = (dual.optimal.evalScore / 100).toFixed(2);
+  let optEvalText = '';
+  if (dual.optimal.isMate) {
+    optEvalText = `Mate in ${Math.abs(dual.optimal.mateIn ?? 1)}`;
+  } else {
+    const optPawns = (dual.optimal.evalScore / 100).toFixed(2);
+    optEvalText = `Optimal Eval: ${dual.optimal.evalScore >= 0 ? '+' : ''}${optPawns}`;
+  }
   ctx.fillStyle = '#34d399';
   ctx.font = 'bold 13px monospace';
-  ctx.fillText(`Optimal Eval: ${dual.optimal.evalScore >= 0 ? '+' : ''}${optPawns}`, rightBoardX + boardSize / 2, footerY + 22);
+  ctx.fillText(optEvalText, rightBoardX + boardSize / 2, footerY + 22);
 }
 
 function playSynthTone(
@@ -661,11 +703,20 @@ export async function exportGameplayVideo({
 
   await new Promise((r) => setTimeout(r, 1000));
 
-  return new Promise<Blob>((resolve) => {
+  return new Promise<Blob>((resolve, reject) => {
+    recorder.onerror = (e) => {
+      if (audioCtx) {
+        audioCtx.close().catch(() => {});
+      }
+      combinedStream.getTracks().forEach((t) => t.stop());
+      reject(e);
+    };
+
     recorder.onstop = () => {
       if (audioCtx) {
         audioCtx.close().catch(() => {});
       }
+      combinedStream.getTracks().forEach((t) => t.stop());
       const blob = new Blob(chunks, { type: 'video/webm' });
       resolve(blob);
     };
