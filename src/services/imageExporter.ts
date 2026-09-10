@@ -94,6 +94,22 @@ export async function exportPositionImage({
     }
   }
 
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  for (let i = 0; i < 8; i++) {
+    const rankLabel = orientation === 'white' ? `${8 - i}` : `${i + 1}`;
+    const fileLabel = orientation === 'white' ? String.fromCharCode(97 + i) : String.fromCharCode(104 - i);
+
+    ctx.fillStyle = (i % 2 === 0) ? darkColor : lightColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(rankLabel, boardX + 4, boardY + i * squareSize + 3);
+
+    ctx.fillStyle = ((7 + i) % 2 === 0) ? darkColor : lightColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(fileLabel, boardX + (i + 1) * squareSize - 4, boardY + boardSize - 3);
+  }
+
   const footerY = boardY + boardSize + 35;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
@@ -119,6 +135,14 @@ export async function exportPositionImage({
       ctx.fillStyle = '#34d399';
       ctx.fillText(`Optimal Engine Move: ${currentMove.bestMoveSan}`, 300, footerY + 28);
     }
+  } else {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Starting Position', 60, footerY);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 15px ui-monospace, monospace';
+    ctx.fillText('Eval: +0.20', 60, footerY + 28);
   }
 
   ctx.fillStyle = '#71717a';

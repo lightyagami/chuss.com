@@ -51,7 +51,7 @@ export function exportAnnotatedPgn(analysis: GameAnalysisResult): string {
 
     if (isWhite) {
       text += `${m.moveNumber}. `;
-    } else if (i === 0) {
+    } else {
       text += `${m.moveNumber}... `;
     }
 
