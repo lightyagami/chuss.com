@@ -14,6 +14,8 @@ import { DualBoardView } from './components/DualBoardView';
 import { AccuracySummary } from './components/AccuracySummary';
 import { PgnModal } from './components/PgnModal';
 import { LiveMatchTracker } from './components/LiveMatchTracker';
+import { EvalGraph } from './components/EvalGraph';
+import { AnalysisSkeleton } from './components/AnalysisSkeleton';
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<'review' | 'live'>('review');
@@ -30,6 +32,28 @@ export const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentDepth, setCurrentDepth] = useState<number>(10);
   const totalPly = analysis?.moves.length ?? 0;
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chuss-theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('chuss-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const [fens, setFens] = useState<string[]>(['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1']);
 
@@ -98,17 +122,17 @@ export const App: React.FC = () => {
 
     const timer = window.setInterval(() => {
       setIsViewingOptimal(false);
-      setCurrentPly((prev) => (totalPly > 0 && prev < totalPly ? prev + 1 : prev));
-    }, 1200);
+      setCurrentPly((prev) => {
+        if (prev >= totalPly) {
+          setIsPlaying(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1500);
 
     return () => window.clearInterval(timer);
   }, [isPlaying, totalPly]);
-
-  useEffect(() => {
-    if (isPlaying && totalPly > 0 && currentPly >= totalPly) {
-      setIsPlaying(false);
-    }
-  }, [isPlaying, currentPly, totalPly]);
 
   const handleJumpToStart = () => {
     setIsPlaying(false);
@@ -135,7 +159,10 @@ export const App: React.FC = () => {
   };
 
   const handleTogglePlay = () => {
-    setIsViewingOptimal(false);
+    if (totalPly === 0) return;
+    if (currentPly >= totalPly) {
+      setCurrentPly(0);
+    }
     setIsPlaying((prev) => !prev);
   };
 
@@ -182,7 +209,7 @@ export const App: React.FC = () => {
     : fens[currentPly] || fens[0] || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       <Navbar
         mode={mode}
         onSelectMode={setMode}
@@ -193,6 +220,8 @@ export const App: React.FC = () => {
         onToggleDualBoard={() => setShowDualBoard((prev) => !prev)}
         onReanalyze={() => runAnalysis(pgn, currentDepth)}
         isAnalyzing={isAnalyzing}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex flex-col gap-6">
@@ -237,6 +266,20 @@ export const App: React.FC = () => {
                     disabled={isImportModalOpen}
                   />
                 </div>
+                {analysis && analysis.moves.length > 0 && (
+                  <div className="w-full">
+                    <EvalGraph
+                      moves={analysis.moves}
+                      currentPly={currentPly}
+                      onSelectPly={(ply) => {
+                        setIsPlaying(false);
+                        setIsViewingOptimal(false);
+                        setCurrentPly(ply);
+                      }}
+                      orientation={orientation}
+                    />
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                   <OptimalComparison
@@ -296,32 +339,52 @@ export const App: React.FC = () => {
                       disabled={isImportModalOpen}
                     />
                   </div>
+                  {analysis && analysis.moves.length > 0 && (
+                    <div className="w-full max-w-[560px]">
+                      <EvalGraph
+                        moves={analysis.moves}
+                        currentPly={currentPly}
+                        onSelectPly={(ply) => {
+                          setIsPlaying(false);
+                          setIsViewingOptimal(false);
+                          setCurrentPly(ply);
+                        }}
+                        orientation={orientation}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="lg:col-span-5 flex flex-col gap-5">
-                  <OptimalComparison
-                    currentMove={currentMove}
-                    showDualBoard={showDualBoard}
-                    onToggleDualBoard={() => setShowDualBoard(true)}
-                    showBestMoveArrow={showBestMoveArrow}
-                    onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
-                  />
+                  {isAnalyzing && !analysis ? (
+                    <AnalysisSkeleton progress={progress} depth={currentDepth} />
+                  ) : (
+                    <>
+                      <OptimalComparison
+                        currentMove={currentMove}
+                        showDualBoard={showDualBoard}
+                        onToggleDualBoard={() => setShowDualBoard(true)}
+                        showBestMoveArrow={showBestMoveArrow}
+                        onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
+                      />
 
-                  <div className="h-[300px]">
-                    <MoveList
-                      moves={analysis?.moves || []}
-                      currentPly={currentPly}
-                      onSelectPly={(ply) => {
-                        setIsPlaying(false);
-                        setIsViewingOptimal(false);
-                        setCurrentPly(ply);
-                      }}
-                      whiteName={analysis?.headers.White || 'White'}
-                      blackName={analysis?.headers.Black || 'Black'}
-                    />
-                  </div>
+                      <div className="h-[300px]">
+                        <MoveList
+                          moves={analysis?.moves || []}
+                          currentPly={currentPly}
+                          onSelectPly={(ply) => {
+                            setIsPlaying(false);
+                            setIsViewingOptimal(false);
+                            setCurrentPly(ply);
+                          }}
+                          whiteName={analysis?.headers.White || 'White'}
+                          blackName={analysis?.headers.Black || 'Black'}
+                        />
+                      </div>
 
-                  {analysis && <AccuracySummary analysis={analysis} />}
+                      {analysis && <AccuracySummary analysis={analysis} />}
+                    </>
+                  )}
                 </div>
               </div>
             )}

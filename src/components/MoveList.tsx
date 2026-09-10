@@ -82,15 +82,12 @@ export const MoveList: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xs">
-      {}
-      <div className="grid grid-cols-[44px_1fr_1fr] bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 py-2 px-3">
+    <div className="flex flex-col h-full bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-lg overflow-hidden shadow-xs transition-colors">
+      <div className="grid grid-cols-[44px_1fr_1fr] bg-slate-50 dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-600 dark:text-zinc-400 py-2 px-3">
         <span>#</span>
         <span className="truncate pr-1">{whiteName}</span>
         <span className="truncate pr-1">{blackName}</span>
       </div>
-
-      {}
       <div ref={containerRef} className="flex-1 overflow-y-auto p-1.5 space-y-0.5 text-xs font-mono">
         {movePairs.map((pair) => {
           const isWhiteActive = currentPly === pair.white?.ply;
@@ -102,28 +99,27 @@ export const MoveList: React.FC<Props> = ({
               key={pair.white?.ply ?? pair.black?.ply ?? pair.moveNumber}
               ref={isRowActive ? activeRowRef : null}
               className={`grid grid-cols-[44px_1fr_1fr] items-center rounded px-2 py-1 transition ${
-                pair.moveNumber % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'
+                pair.moveNumber % 2 === 0
+                  ? 'bg-slate-50/50 dark:bg-zinc-950/40'
+                  : 'bg-white dark:bg-black'
               }`}
             >
-              {}
-              <span className="text-slate-400 font-sans font-medium text-[11px]">
+              <span className="text-slate-400 dark:text-zinc-500 font-sans font-medium text-[11px]">
                 {pair.moveNumber}.
               </span>
-
-              {}
               {pair.white ? (
                 <button
                   onClick={() => onSelectPly(pair.white!.ply)}
                   className={`flex items-center justify-between px-2 py-1 rounded transition text-left mr-1 ${
                     isWhiteActive
-                      ? 'bg-slate-900 text-white font-bold'
-                      : 'hover:bg-slate-100 text-slate-800'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-black font-bold'
+                      : 'hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-800 dark:text-zinc-200'
                   }`}
                 >
                   <span className="truncate">{pair.white.san}</span>
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     {renderBadgeIcon(pair.white)}
-                    <span className={`text-[10px] font-sans ${isWhiteActive ? 'text-slate-300' : 'text-slate-500'}`}>
+                    <span className={`text-[10px] font-sans ${isWhiteActive ? 'text-slate-300 dark:text-zinc-800 font-medium' : 'text-slate-500 dark:text-zinc-400'}`}>
                       {renderEval(pair.white)}
                     </span>
                   </div>
@@ -131,21 +127,19 @@ export const MoveList: React.FC<Props> = ({
               ) : (
                 <span />
               )}
-
-              {}
               {pair.black ? (
                 <button
                   onClick={() => onSelectPly(pair.black!.ply)}
                   className={`flex items-center justify-between px-2 py-1 rounded transition text-left ml-1 ${
                     isBlackActive
-                      ? 'bg-slate-900 text-white font-bold'
-                      : 'hover:bg-slate-100 text-slate-800'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-black font-bold'
+                      : 'hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-800 dark:text-zinc-200'
                   }`}
                 >
                   <span className="truncate">{pair.black.san}</span>
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     {renderBadgeIcon(pair.black)}
-                    <span className={`text-[10px] font-sans ${isBlackActive ? 'text-slate-300' : 'text-slate-500'}`}>
+                    <span className={`text-[10px] font-sans ${isBlackActive ? 'text-slate-300 dark:text-zinc-800 font-medium' : 'text-slate-500 dark:text-zinc-400'}`}>
                       {renderEval(pair.black)}
                     </span>
                   </div>

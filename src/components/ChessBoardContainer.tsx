@@ -52,7 +52,7 @@ export const ChessBoardContainer: React.FC<Props> = ({
             ? 'rgba(239, 68, 68, 0.85)'
             : isMistake
             ? 'rgba(249, 115, 22, 0.85)'
-            : 'rgba(234, 179, 8, 0.85)';
+            : 'rgba(234, 179, 8, 0.75)';
           list.push({ startSquare: currentMove.from, endSquare: currentMove.to, color });
         }
 
@@ -116,29 +116,24 @@ export const ChessBoardContainer: React.FC<Props> = ({
           orientation={orientation}
         />
       </div>
-
-      {}
       <div className="flex flex-col flex-1 min-w-0 max-w-[500px]">
-        {}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-white rounded-t-lg border border-slate-200 text-xs shadow-xs">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-black rounded-t-lg border border-slate-200 dark:border-zinc-800 text-xs shadow-xs transition-colors">
           <div className="flex items-center gap-2">
-            <div className={`w-3.5 h-3.5 rounded-full border border-slate-400 ${topPlayer.color === 'Black' ? 'bg-slate-900' : 'bg-white'}`} />
-            <span className="font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-[200px]">
+            <div className={`w-3.5 h-3.5 rounded-full border border-slate-400 dark:border-zinc-700 ${topPlayer.color === 'Black' ? 'bg-slate-900 dark:bg-zinc-900' : 'bg-white'}`} />
+            <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[140px] sm:max-w-[200px]">
               {topPlayer.name}
             </span>
             {topPlayer.elo && (
-              <span className="text-slate-500 font-mono text-[11px]">({topPlayer.elo})</span>
+              <span className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">({topPlayer.elo})</span>
             )}
           </div>
-
-          {}
           {hasOptimalAlternative && onToggleViewOptimal && (
             <button
               onClick={onToggleViewOptimal}
               className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
                 isViewingOptimal
                   ? 'bg-emerald-700 text-white'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                  : 'bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700'
               }`}
               title="Toggle between actual played move and optimal move on the board"
             >
@@ -147,9 +142,7 @@ export const ChessBoardContainer: React.FC<Props> = ({
             </button>
           )}
         </div>
-
-        {}
-        <div className="relative rounded-none overflow-hidden border-x border-slate-200 bg-white aspect-square w-full shadow-xs">
+        <div className="relative rounded-none overflow-hidden border-x border-slate-200 dark:border-zinc-800 bg-white dark:bg-black aspect-square w-full shadow-xs">
           <Chessboard
             options={{
               position: fen,
@@ -163,21 +156,19 @@ export const ChessBoardContainer: React.FC<Props> = ({
             }}
           />
         </div>
-
-        {}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-white rounded-b-lg border border-slate-200 text-xs shadow-xs">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-black rounded-b-lg border border-slate-200 dark:border-zinc-800 text-xs shadow-xs transition-colors">
           <div className="flex items-center gap-2">
-            <div className={`w-3.5 h-3.5 rounded-full border border-slate-400 ${bottomPlayer.color === 'Black' ? 'bg-slate-900' : 'bg-white'}`} />
-            <span className="font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-[200px]">
+            <div className={`w-3.5 h-3.5 rounded-full border border-slate-400 dark:border-zinc-700 ${bottomPlayer.color === 'Black' ? 'bg-slate-900 dark:bg-zinc-900' : 'bg-white'}`} />
+            <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[140px] sm:max-w-[200px]">
               {bottomPlayer.name}
             </span>
             {bottomPlayer.elo && (
-              <span className="text-slate-500 font-mono text-[11px]">({bottomPlayer.elo})</span>
+              <span className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">({bottomPlayer.elo})</span>
             )}
           </div>
 
           {isViewingOptimal && (
-            <span className="text-[11px] text-emerald-700 font-mono font-medium flex items-center gap-1">
+            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono font-medium flex items-center gap-1">
               <CheckCircle2 size={12} /> Optimal: {currentMove?.bestMoveSan}
             </span>
           )}

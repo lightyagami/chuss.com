@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
     background-color: #f8fafc;
@@ -7,6 +9,11 @@
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     min-height: 100vh;
+  }
+
+  .dark body {
+    background-color: #000000;
+    color: #f8fafc;
   }
 }
 
@@ -18,10 +25,33 @@
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
+.dark ::-webkit-scrollbar-track {
+  background: #000000;
+}
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+svg path[stroke*="234, 179, 8"],
+svg path[stroke*="239, 68, 68"],
+svg path[stroke*="249, 115, 22"] {
+  stroke-dasharray: 24 14 !important;
+  stroke-linecap: round !important;
+  stroke-width: 22px !important;
+}
+
+svg path[stroke*="16, 185, 129"] {
+  stroke-linecap: round !important;
+  stroke-width: 32px !important;
+}
+

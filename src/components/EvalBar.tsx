@@ -54,14 +54,13 @@ export const EvalBar: React.FC<Props> = ({
   return (
     <div
       style={{ height }}
-      className="w-8 md:w-9 bg-white border border-slate-300 rounded-md overflow-hidden flex flex-col shadow-xs relative select-none"
+      className="w-8 md:w-9 bg-white dark:bg-black border border-slate-300 dark:border-zinc-800 rounded-md overflow-hidden flex flex-col shadow-xs relative select-none transition-colors"
       title={`Evaluation: ${label}`}
     >
-      {}
       <div
         style={{ height: `${topPercent}%` }}
         className={`transition-all duration-300 ease-out flex items-start justify-center pt-1.5 ${
-          orientation === 'white' ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'
+          orientation === 'white' ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'
         }`}
       >
         {showLabelOnTop && topPercent > 12 && (
@@ -70,11 +69,7 @@ export const EvalBar: React.FC<Props> = ({
           </span>
         )}
       </div>
-
-      {}
-      <div className="h-0.5 bg-slate-400 w-full shrink-0 z-10" />
-
-      {}
+      <div className="h-0.5 bg-slate-400 dark:bg-zinc-700 w-full shrink-0 z-10" />
       <div
         style={{ height: `${bottomPercent}%` }}
         className={`transition-all duration-300 ease-out flex items-end justify-center pb-1.5 ${

@@ -113,38 +113,34 @@ export const DualBoardView: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      {}
-      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-xs">
+      <div className="flex items-center justify-between bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-lg px-4 py-3 shadow-xs transition-colors">
         <div className="flex items-center gap-2">
-          <Layers className="text-slate-700" size={17} />
-          <span className="font-semibold text-sm text-slate-900">
+          <Layers className="text-slate-700 dark:text-zinc-300" size={17} />
+          <span className="font-semibold text-sm text-slate-900 dark:text-white">
             Dual Board View — Actual Game vs Optimal Play
           </span>
         </div>
         <button
           onClick={onFlipBoard}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 border border-slate-300 transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700 transition"
         >
-          <RotateCcw size={13} className="text-slate-500" />
+          <RotateCcw size={13} className="text-slate-500 dark:text-zinc-400" />
           <span>Flip ({orientation === 'white' ? 'White' : 'Black'})</span>
         </button>
       </div>
-
-      {}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {}
-        <div className="flex flex-col items-center bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
+        <div className="flex flex-col items-center bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-lg p-4 shadow-xs transition-colors">
           <div className="flex items-center justify-between w-full mb-3 px-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
               Actual Game Played
             </span>
-            <span className="text-sm font-mono font-bold text-slate-900">
+            <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">
               {currentMove.moveNumber}{currentMove.color === 'w' ? '.' : '...'} {currentMove.san}
             </span>
           </div>
 
-          <div className="aspect-square w-full max-w-[420px] rounded-none overflow-hidden border border-slate-300 shadow-xs">
+          <div className="aspect-square w-full max-w-[420px] rounded-none overflow-hidden border border-slate-300 dark:border-zinc-800 shadow-xs">
             <Chessboard
               options={{
                 position: currentMove.fenAfter,
@@ -161,27 +157,25 @@ export const DualBoardView: React.FC<Props> = ({
             />
           </div>
 
-          <div className="w-full mt-3 p-2.5 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
-            <span className="text-slate-500">Position Eval:</span>
-            <span className="font-mono font-bold text-slate-900">
+          <div className="w-full mt-3 p-2.5 rounded-md bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-400 flex items-center justify-between">
+            <span className="text-slate-500 dark:text-zinc-400">Position Eval:</span>
+            <span className="font-mono font-bold text-slate-900 dark:text-white">
               {formatEvalText(currentMove.evalScore, currentMove.isMate, currentMove.mateIn)}
             </span>
           </div>
         </div>
-
-        {}
-        <div className="flex flex-col items-center bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
+        <div className="flex flex-col items-center bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-lg p-4 shadow-xs transition-colors">
           <div className="flex items-center justify-between w-full mb-3 px-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 size={14} />
               Optimal Continuation
             </span>
-            <span className="text-sm font-mono font-bold text-emerald-800">
+            <span className="text-sm font-mono font-bold text-emerald-800 dark:text-emerald-400">
               {currentMove.bestMoveSan || currentMove.san}
             </span>
           </div>
 
-          <div className="aspect-square w-full max-w-[420px] rounded-none overflow-hidden border border-slate-300 shadow-xs">
+          <div className="aspect-square w-full max-w-[420px] rounded-none overflow-hidden border border-slate-300 dark:border-zinc-800 shadow-xs">
             <Chessboard
               options={{
                 position: optimalFen || currentMove.fenBefore,
@@ -199,14 +193,12 @@ export const DualBoardView: React.FC<Props> = ({
               }}
             />
           </div>
-
-          {}
-          <div className="w-full mt-3 p-2.5 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+          <div className="w-full mt-3 p-2.5 rounded-md bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
               <button
                 onClick={() => handleStepOptimal(optimalStepIndex - 1)}
                 disabled={optimalStepIndex <= 0}
-                className="p-1.5 rounded bg-white hover:bg-slate-100 border border-slate-300 disabled:opacity-30 text-slate-700 transition"
+                className="p-1.5 rounded bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-300 dark:border-zinc-700 disabled:opacity-30 text-slate-700 dark:text-zinc-200 transition"
                 title="Step back in optimal line"
               >
                 <ChevronLeft size={15} />
@@ -214,21 +206,21 @@ export const DualBoardView: React.FC<Props> = ({
               <button
                 onClick={() => handleStepOptimal(optimalStepIndex + 1)}
                 disabled={optimalStepIndex >= optimalHistory.length - 1}
-                className="p-1.5 rounded bg-white hover:bg-slate-100 border border-slate-300 disabled:opacity-30 text-slate-700 transition"
+                className="p-1.5 rounded bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-300 dark:border-zinc-700 disabled:opacity-30 text-slate-700 dark:text-zinc-200 transition"
                 title="Step forward in optimal line"
               >
                 <ChevronRight size={15} />
               </button>
             </div>
 
-            <div className="text-xs text-slate-600 flex items-center gap-1.5 truncate">
-              <span className="text-slate-400">Step {optimalStepIndex + 1}/{Math.max(1, optimalHistory.length)}:</span>
-              <span className="font-mono font-bold text-slate-900">
+            <div className="text-xs text-slate-600 dark:text-zinc-400 flex items-center gap-1.5 truncate">
+              <span className="text-slate-400 dark:text-zinc-500">Step {optimalStepIndex + 1}/{Math.max(1, optimalHistory.length)}:</span>
+              <span className="font-mono font-bold text-slate-900 dark:text-white">
                 {currentOptimalMove?.san || currentMove.bestMoveSan}
               </span>
             </div>
 
-            <span className="text-xs font-mono font-medium text-slate-900">
+            <span className="text-xs font-mono font-medium text-slate-900 dark:text-white">
               {(() => {
                 if (currentMove.bestMoveScore === undefined) return 'Optimal';
                 if (currentMove.bestMoveIsMate) {

@@ -112,19 +112,18 @@ export const EvalGraph: React.FC<Props> = ({
   if (totalMoves === 0) return null;
 
   return (
-    <div className="glass-panel rounded-2xl p-4 flex flex-col gap-2 relative select-none">
-      {}
+    <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col gap-2 relative select-none shadow-xs transition-colors">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+          <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-zinc-900 border border-indigo-200 dark:border-zinc-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <TrendingUp size={13} />
           </div>
-          <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">
+          <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
             Evaluation Timeline
           </h4>
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+        <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-zinc-400">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
             Brilliant
@@ -133,20 +132,18 @@ export const EvalGraph: React.FC<Props> = ({
             <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
             Blunder
           </span>
-          <span className="font-mono text-slate-300">
+          <span className="font-mono text-slate-700 dark:text-zinc-300 font-medium">
             Ply {currentPly}/{totalMoves}
           </span>
         </div>
       </div>
-
-      {}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        className="relative h-28 w-full cursor-crosshair rounded-xl overflow-hidden bg-slate-950/70 border border-white/5 shadow-inner"
+        className="relative h-28 w-full cursor-crosshair rounded-lg overflow-hidden bg-black border border-zinc-800 shadow-inner"
       >
         <svg
           viewBox={`0 0 ${width} ${height}`}
