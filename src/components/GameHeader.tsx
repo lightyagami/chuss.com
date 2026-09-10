@@ -2,6 +2,51 @@ import React from 'react';
 import type { GameHeaders } from '../types/chess';
 import { Calendar, Clock, Award } from 'lucide-react';
 
+export function formatTimeControl(tc?: string): string {
+  if (!tc) return '';
+  const trimmed = tc.trim();
+  if (trimmed === '-') return 'Untimed';
+
+  if (trimmed.includes('/')) {
+    const parts = trimmed.split('/');
+    if (parts.length === 2) {
+      const moves = parseInt(parts[0], 10);
+      const seconds = parseInt(parts[1], 10);
+      if (!isNaN(moves) && !isNaN(seconds)) {
+        if (seconds % 86400 === 0) {
+          const days = Math.round(seconds / 86400);
+          return days === 1 ? '1 day/move' : `${days} days/move`;
+        }
+        if (seconds % 3600 === 0) {
+          const hours = Math.round(seconds / 3600);
+          return hours === 1 ? '1 hr/move' : `${hours} hrs/move`;
+        }
+        const mins = Math.round(seconds / 60);
+        return `${mins} min/move`;
+      }
+    }
+  }
+
+  if (trimmed.includes('+')) {
+    const [baseStr, incStr] = trimmed.split('+');
+    const baseSec = parseInt(baseStr, 10);
+    const incSec = parseInt(incStr, 10);
+    if (!isNaN(baseSec) && !isNaN(incSec)) {
+      const baseMin = Math.round(baseSec / 60);
+      return `${baseMin}+${incSec}`;
+    }
+  }
+
+  const sec = parseInt(trimmed, 10);
+  if (!isNaN(sec)) {
+    if (sec < 60) return `${sec}s`;
+    const min = Math.round(sec / 60);
+    return `${min} min`;
+  }
+
+  return trimmed;
+}
+
 interface Props {
   headers: GameHeaders;
   whiteAccuracy?: number;
@@ -56,7 +101,7 @@ export const GameHeader: React.FC<Props> = ({
             {headers.TimeControl && (
               <span className="flex items-center gap-1">
                 <Clock size={10} className="text-slate-400 dark:text-zinc-500" />
-                {headers.TimeControl}
+                {formatTimeControl(headers.TimeControl)}
               </span>
             )}
           </div>

@@ -55,7 +55,7 @@ export const Navbar: React.FC<Props> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-14 py-2 sm:py-0 flex items-center justify-between gap-2.5 flex-wrap">
         <div className="flex items-center gap-3 shrink-0">
           <div 
             onClick={() => onSelectMode('review')}
@@ -157,37 +157,39 @@ export const Navbar: React.FC<Props> = ({
                 </button>
               )}
 
-              {onExportPgn && (
-                <button
-                  onClick={onExportPgn}
-                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-md bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-200 transition"
-                  title="Export Annotated PGN with evaluations"
-                >
-                  <FileDown size={13} />
-                  <span className="hidden md:inline">PGN</span>
-                </button>
-              )}
-
-              {onExportImage && (
-                <button
-                  onClick={onExportImage}
-                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-md bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-200 transition"
-                  title="Export Board Card as Image"
-                >
-                  <Camera size={13} />
-                  <span className="hidden md:inline">PNG</span>
-                </button>
-              )}
-
-              {onOpenVideoModal && (
-                <button
-                  onClick={onOpenVideoModal}
-                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-md bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-xs font-medium text-indigo-600 dark:text-indigo-400 transition"
-                  title="Export Animated Gameplay Video (Actual / Optimal / Dual)"
-                >
-                  <Film size={13} />
-                  <span className="hidden md:inline">Video</span>
-                </button>
+              {(onExportPgn || onExportImage || onOpenVideoModal) && (
+                <div className="flex items-center bg-slate-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-slate-200 dark:border-zinc-800 text-xs font-medium">
+                  {onExportPgn && (
+                    <button
+                      onClick={onExportPgn}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition"
+                      title="Export Annotated PGN"
+                    >
+                      <FileDown size={12} className="text-slate-500 dark:text-zinc-400" />
+                      <span>PGN</span>
+                    </button>
+                  )}
+                  {onExportImage && (
+                    <button
+                      onClick={onExportImage}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition"
+                      title="Export Board Card as PNG Image"
+                    >
+                      <Camera size={12} className="text-slate-500 dark:text-zinc-400" />
+                      <span>PNG</span>
+                    </button>
+                  )}
+                  {onOpenVideoModal && (
+                    <button
+                      onClick={onOpenVideoModal}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition font-medium"
+                      title="Export Animated Video"
+                    >
+                      <Film size={12} />
+                      <span>Video</span>
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="hidden sm:flex items-center bg-slate-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-slate-200 dark:border-zinc-800 text-xs font-medium">

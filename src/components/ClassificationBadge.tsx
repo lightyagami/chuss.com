@@ -27,6 +27,13 @@ export const getClassificationDetails = (c?: MoveClassification) => {
         badgeBg: 'bg-cyan-600 text-white',
         icon: Sparkles,
       };
+    case 'great':
+      return {
+        label: 'Great',
+        color: 'text-emerald-800 bg-emerald-50 border-emerald-300',
+        badgeBg: 'bg-emerald-600 text-white',
+        icon: Sparkles,
+      };
     case 'best':
       return {
         label: 'Best',
