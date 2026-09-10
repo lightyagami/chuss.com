@@ -667,9 +667,12 @@ export async function exportGameplayVideo({
     }
   }
 
-  const subTitle = mode === 'actual'
-    ? 'Replay of Actual Game with Evaluation'
-    : 'Stockfish Optimal Continuation Line';
+  const isClip = startPly !== undefined || endPly !== undefined;
+  const subTitle = isClip
+    ? `Critical Moment Clip (Moves ${Math.floor(((startPly ?? 0)) / 2) + 1}–${Math.floor(((endPly ?? 0)) / 2) + 1})`
+    : (mode === 'actual'
+        ? 'Replay of Actual Game with Evaluation'
+        : 'Stockfish Optimal Continuation Line');
 
   // Draw initial frame immediately so canvasStream has a painted frame
   if (isDual && dualFrames.length > 0) {
@@ -711,17 +714,21 @@ export async function exportGameplayVideo({
 
     if (isDual) {
       drawDualFrame(ctx, width, height, analysis, dualFrames[idx], orientation);
-      if (audioCtx && audioDest && idx > 0) {
+      if (audioCtx && audioDest) {
         const act = dualFrames[idx].actual;
-        const soundType = act.isCheck ? 'check' : (act.isCapture ? 'capture' : 'move');
-        playSynthTone(audioCtx, audioDest, soundType);
+        if (act.san !== 'Start') {
+          const soundType = act.isCheck ? 'check' : (act.isCapture ? 'capture' : 'move');
+          playSynthTone(audioCtx, audioDest, soundType);
+        }
       }
     } else {
       const f = singleFrames[idx];
       drawSingleFrame(ctx, width, height, analysis, f, orientation, subTitle);
-      if (audioCtx && audioDest && idx > 0) {
-        const soundType = f.isCheck ? 'check' : (f.isCapture ? 'capture' : 'move');
-        playSynthTone(audioCtx, audioDest, soundType);
+      if (audioCtx && audioDest) {
+        if (f.san !== 'Start') {
+          const soundType = f.isCheck ? 'check' : (f.isCapture ? 'capture' : 'move');
+          playSynthTone(audioCtx, audioDest, soundType);
+        }
       }
     }
 
