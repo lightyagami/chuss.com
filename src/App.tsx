@@ -23,6 +23,7 @@ import { BatchReviewDashboard } from './components/BatchReviewDashboard';
 import { OpponentScout } from './components/OpponentScout';
 import { PlayerCompare } from './components/PlayerCompare';
 import { TacticsQuizModal } from './components/TacticsQuizModal';
+import { VideoExportModal } from './components/VideoExportModal';
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>('review');
@@ -37,6 +38,7 @@ export const App: React.FC = () => {
   const [progress, setProgress] = useState<{ current: number; total: number; message: string } | undefined>(undefined);
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState<boolean>(false);
+  const [isVideoExportModalOpen, setIsVideoExportModalOpen] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentDepth, setCurrentDepth] = useState<number>(10);
   const totalPly = analysis?.moves.length ?? 0;
@@ -274,6 +276,7 @@ export const App: React.FC = () => {
         onOpenTacticsQuiz={() => setIsQuizModalOpen(true)}
         onExportPgn={analysis ? handleExportAnnotatedPgn : undefined}
         onExportImage={handleExportCardImage}
+        onOpenVideoModal={analysis ? () => setIsVideoExportModalOpen(true) : undefined}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex flex-col gap-6">
@@ -468,6 +471,13 @@ export const App: React.FC = () => {
         isOpen={isQuizModalOpen}
         onClose={() => setIsQuizModalOpen(false)}
         analysis={analysis}
+      />
+
+      <VideoExportModal
+        isOpen={isVideoExportModalOpen}
+        onClose={() => setIsVideoExportModalOpen(false)}
+        analysis={analysis}
+        orientation={orientation}
       />
     </div>
   );

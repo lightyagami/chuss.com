@@ -12,7 +12,8 @@ import {
   Shield, 
   Users, 
   FileDown,
-  Camera
+  Camera,
+  Film
 } from 'lucide-react';
 
 export type AppMode = 'review' | 'live' | 'openings' | 'batch' | 'scout' | 'compare';
@@ -32,6 +33,7 @@ interface Props {
   onOpenTacticsQuiz?: () => void;
   onExportPgn?: () => void;
   onExportImage?: () => void;
+  onOpenVideoModal?: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -49,6 +51,7 @@ export const Navbar: React.FC<Props> = ({
   onOpenTacticsQuiz,
   onExportPgn,
   onExportImage,
+  onOpenVideoModal,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 transition-colors">
@@ -173,6 +176,17 @@ export const Navbar: React.FC<Props> = ({
                 >
                   <Camera size={13} />
                   <span className="hidden md:inline">PNG</span>
+                </button>
+              )}
+
+              {onOpenVideoModal && (
+                <button
+                  onClick={onOpenVideoModal}
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-md bg-white dark:bg-zinc-950 hover:bg-slate-50 dark:hover:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-xs font-medium text-indigo-600 dark:text-indigo-400 transition"
+                  title="Export Animated Gameplay Video (Actual / Optimal / Dual)"
+                >
+                  <Film size={13} />
+                  <span className="hidden md:inline">Video</span>
                 </button>
               )}
 
