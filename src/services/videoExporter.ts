@@ -9,6 +9,8 @@ export interface VideoExportOptions {
   secondsPerMove?: number;
   orientation?: 'white' | 'black';
   includeAudio?: boolean;
+  startPly?: number;
+  endPly?: number;
   onProgress?: (prog: { current: number; total: number; percent: number; message: string }) => void;
   isCancelled?: () => boolean;
 }
@@ -588,6 +590,8 @@ export async function exportGameplayVideo({
   secondsPerMove = 1.0,
   orientation = 'white',
   includeAudio = true,
+  startPly,
+  endPly,
   onProgress,
   isCancelled,
 }: VideoExportOptions): Promise<Blob> {
@@ -655,10 +659,26 @@ export async function exportGameplayVideo({
     ? 'Replay of Actual Game with Evaluation'
     : 'Stockfish Optimal Continuation Line';
 
-  const singleFrames = !isDual
+  let singleFrames = !isDual
     ? (mode === 'actual' ? buildActualFrames(analysis) : buildOptimalFrames(analysis))
     : [];
-  const dualFrames = isDual ? buildDualFrames(analysis) : [];
+  let dualFrames = isDual ? buildDualFrames(analysis) : [];
+
+  if (startPly !== undefined || endPly !== undefined) {
+    const s = Math.max(0, startPly ?? 0);
+    const e = Math.min(
+      isDual ? dualFrames.length - 1 : singleFrames.length - 1,
+      endPly ?? (isDual ? dualFrames.length - 1 : singleFrames.length - 1)
+    );
+    if (s <= e) {
+      if (isDual) {
+        dualFrames = dualFrames.slice(s, e + 1);
+      } else {
+        singleFrames = singleFrames.slice(s, e + 1);
+      }
+    }
+  }
+
   const totalFrames = isDual ? dualFrames.length : singleFrames.length;
 
   const stepMs = Math.max(400, Math.round(secondsPerMove * 1000));

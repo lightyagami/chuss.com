@@ -13,6 +13,7 @@ import {
   Users, 
   FileDown,
   Camera,
+  Share2,
   Film
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ interface Props {
   onOpenTacticsQuiz?: () => void;
   onExportPgn?: () => void;
   onExportImage?: () => void;
+  onExportSummaryCard?: () => void;
   onOpenVideoModal?: () => void;
 }
 
@@ -51,6 +53,7 @@ export const Navbar: React.FC<Props> = ({
   onOpenTacticsQuiz,
   onExportPgn,
   onExportImage,
+  onExportSummaryCard,
   onOpenVideoModal,
 }) => {
   return (
@@ -177,6 +180,16 @@ export const Navbar: React.FC<Props> = ({
                     >
                       <Camera size={12} className="text-slate-500 dark:text-zinc-400" />
                       <span className="hidden sm:inline">PNG</span>
+                    </button>
+                  )}
+                  {onExportSummaryCard && (
+                    <button
+                      onClick={onExportSummaryCard}
+                      className="flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-md text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-white transition font-medium"
+                      title="Export Match Summary Infographic Card"
+                    >
+                      <Share2 size={12} />
+                      <span className="hidden sm:inline">Card</span>
                     </button>
                   )}
                   {onOpenVideoModal && (

@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void;
   analysis: GameAnalysisResult | null;
   orientation: 'white' | 'black';
+  currentPly?: number;
 }
 
 interface RenderedVideo {
@@ -20,8 +21,10 @@ export const VideoExportModal: React.FC<Props> = ({
   onClose,
   analysis,
   orientation,
+  currentPly = 0,
 }) => {
   const [mode, setMode] = useState<VideoExportMode>('actual');
+  const [scope, setScope] = useState<'full' | 'clip'>('full');
   const [speed, setSpeed] = useState<number>(1.0);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [progress, setProgress] = useState<{ current: number; total: number; percent: number; message: string }>({
@@ -80,12 +83,18 @@ export const VideoExportModal: React.FC<Props> = ({
     isCancelledRef.current = false;
 
     try {
+      const isClip = scope === 'clip';
+      const startPly = isClip ? Math.max(0, currentPly - 2) : undefined;
+      const endPly = isClip ? Math.min(analysis.moves.length, currentPly + 3) : undefined;
+
       const blob = await exportGameplayVideo({
         analysis,
         mode,
         secondsPerMove: speed,
         orientation,
         includeAudio: true,
+        startPly,
+        endPly,
         onProgress: (p) => setProgress(p),
         isCancelled: () => isCancelledRef.current,
       });
@@ -222,30 +231,65 @@ export const VideoExportModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
-              Animation Speed (Pace per move)
-            </label>
-            <div className="flex items-center gap-2">
-              {[
-                { label: 'Fast (0.6s)', val: 0.6 },
-                { label: 'Normal (1.0s)', val: 1.0 },
-                { label: 'Relaxed (1.5s)', val: 1.5 },
-              ].map((s) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+                Replay Scope
+              </label>
+              <div className="flex items-center gap-2">
                 <button
-                  key={s.val}
                   type="button"
                   disabled={isExporting}
-                  onClick={() => setSpeed(s.val)}
+                  onClick={() => setScope('full')}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
-                    speed === s.val
+                    scope === 'full'
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-transparent font-semibold shadow-xs'
                       : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-300'
                   }`}
                 >
-                  {s.label}
+                  Full Game Replay
                 </button>
-              ))}
+                <button
+                  type="button"
+                  disabled={isExporting}
+                  onClick={() => setScope('clip')}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
+                    scope === 'clip'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-transparent font-semibold shadow-xs'
+                      : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-300'
+                  }`}
+                  title="Export a focused 5-move clip around the current move"
+                >
+                  Critical Moment Clip
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+                Animation Speed (Pace per move)
+              </label>
+              <div className="flex items-center gap-2">
+                {[
+                  { label: 'Fast (0.6s)', val: 0.6 },
+                  { label: 'Normal (1.0s)', val: 1.0 },
+                  { label: 'Relaxed (1.5s)', val: 1.5 },
+                ].map((s) => (
+                  <button
+                    key={s.val}
+                    type="button"
+                    disabled={isExporting}
+                    onClick={() => setSpeed(s.val)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
+                      speed === s.val
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-transparent font-semibold shadow-xs'
+                        : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-700 dark:text-zinc-300'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Arrow } from 'react-chessboard';
 import { EvalBar } from './EvalBar';
 import type { MoveAnalysis } from '../types/chess';
-import { CheckCircle2, Shuffle } from 'lucide-react';
+import { CheckCircle2, Shuffle, Flame } from 'lucide-react';
+import { computeBoardHeatmap } from '../utils/boardHeatmap';
 
 interface Props {
   fen: string;
@@ -32,6 +33,7 @@ export const ChessBoardContainer: React.FC<Props> = ({
   onToggleViewOptimal,
   hasOptimalAlternative = false,
 }) => {
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
   const arrows = useMemo<Arrow[]>(() => {
     const list: Arrow[] = [];
 
@@ -75,14 +77,14 @@ export const ChessBoardContainer: React.FC<Props> = ({
   }, [currentMove, showBestMoveArrow, isViewingOptimal]);
 
   const squareStyles = useMemo(() => {
-    const styles: Record<string, React.CSSProperties> = {};
+    const styles: Record<string, React.CSSProperties> = showHeatmap ? computeBoardHeatmap(fen) : {};
     if (currentMove) {
       if (isViewingOptimal && currentMove.bestMoveFrom && currentMove.bestMoveTo) {
-        styles[currentMove.bestMoveFrom] = { backgroundColor: 'rgba(16, 185, 129, 0.3)' };
-        styles[currentMove.bestMoveTo] = { backgroundColor: 'rgba(16, 185, 129, 0.3)' };
+        styles[currentMove.bestMoveFrom] = { backgroundColor: 'rgba(16, 185, 129, 0.4)' };
+        styles[currentMove.bestMoveTo] = { backgroundColor: 'rgba(16, 185, 129, 0.4)' };
       } else if (currentMove.from && currentMove.to) {
         const isBlunder = currentMove.classification === 'blunder';
-        const bg = isBlunder ? 'rgba(239, 68, 68, 0.35)' : 'rgba(234, 179, 8, 0.25)';
+        const bg = isBlunder ? 'rgba(239, 68, 68, 0.45)' : 'rgba(234, 179, 8, 0.35)';
         styles[currentMove.from] = { backgroundColor: bg };
         styles[currentMove.to] = { backgroundColor: bg };
       }
@@ -90,12 +92,12 @@ export const ChessBoardContainer: React.FC<Props> = ({
 
     if (!isViewingOptimal && currentMove?.checkSquare) {
       styles[currentMove.checkSquare] = {
-        backgroundColor: 'rgba(239, 68, 68, 0.45)',
+        backgroundColor: 'rgba(239, 68, 68, 0.55)',
       };
     }
 
     return styles;
-  }, [currentMove, isViewingOptimal]);
+  }, [currentMove, isViewingOptimal, showHeatmap, fen]);
 
   const topPlayer = orientation === 'white'
     ? { name: blackName, elo: blackElo, color: 'Black' }
@@ -127,20 +129,35 @@ export const ChessBoardContainer: React.FC<Props> = ({
               <span className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">({topPlayer.elo})</span>
             )}
           </div>
-          {hasOptimalAlternative && onToggleViewOptimal && (
+          <div className="flex items-center gap-1.5">
             <button
-              onClick={onToggleViewOptimal}
-              className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
-                isViewingOptimal
-                  ? 'bg-emerald-700 text-white'
-                  : 'bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700'
+              type="button"
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition ${
+                showHeatmap
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-800'
               }`}
-              title="Toggle between actual played move and optimal move on the board"
+              title="Toggle square control and tension heatmap"
             >
-              <Shuffle size={12} />
-              <span>{isViewingOptimal ? 'Viewing: Optimal' : 'Viewing: Played'}</span>
+              <Flame size={11} className={showHeatmap ? 'text-white' : 'text-amber-500'} />
+              <span>Heatmap</span>
             </button>
-          )}
+            {hasOptimalAlternative && onToggleViewOptimal && (
+              <button
+                onClick={onToggleViewOptimal}
+                className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
+                  isViewingOptimal
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700'
+                }`}
+                title="Toggle between actual played move and optimal move on the board"
+              >
+                <Shuffle size={12} />
+                <span>{isViewingOptimal ? 'Viewing: Optimal' : 'Viewing: Played'}</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="relative rounded-none overflow-hidden border-x border-slate-200 dark:border-zinc-800 bg-white dark:bg-black aspect-square w-full shadow-xs">
           <Chessboard

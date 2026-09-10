@@ -20,6 +20,7 @@ interface Props {
   showBestMoveArrow: boolean;
   onToggleBestMoveArrow: () => void;
   onExportCardImage?: () => void;
+  onOpenPractice?: () => void;
 }
 
 export const OptimalComparison: React.FC<Props> = ({
@@ -29,6 +30,7 @@ export const OptimalComparison: React.FC<Props> = ({
   showBestMoveArrow,
   onToggleBestMoveArrow,
   onExportCardImage,
+  onOpenPractice,
 }) => {
   const [showWhatIf, setShowWhatIf] = useState<boolean>(false);
 
@@ -162,6 +164,17 @@ export const OptimalComparison: React.FC<Props> = ({
             <Compass size={13} />
             <span>Arrow: {showBestMoveArrow ? 'ON' : 'OFF'}</span>
           </button>
+
+          {onOpenPractice && !isOptimal && (
+            <button
+              onClick={onOpenPractice}
+              className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-semibold transition shadow-xs"
+              title="Practice finding the engine's optimal alternative on an interactive board"
+            >
+              <Lightbulb size={13} className="text-amber-600 dark:text-amber-400" />
+              <span>Practice Move</span>
+            </button>
+          )}
 
           <button
             onClick={() => setShowWhatIf((p) => !p)}

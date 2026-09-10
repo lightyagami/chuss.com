@@ -24,6 +24,8 @@ import { OpponentScout } from './components/OpponentScout';
 import { PlayerCompare } from './components/PlayerCompare';
 import { TacticsQuizModal } from './components/TacticsQuizModal';
 import { VideoExportModal } from './components/VideoExportModal';
+import { PracticeAlternativeModal } from './components/PracticeAlternativeModal';
+import { exportMatchSummaryCard, downloadSummaryCardImage } from './services/summaryCardExporter';
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>('review');
@@ -38,6 +40,7 @@ export const App: React.FC = () => {
   const [progress, setProgress] = useState<{ current: number; total: number; message: string } | undefined>(undefined);
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState<boolean>(false);
+  const [isPracticeModalOpen, setIsPracticeModalOpen] = useState<boolean>(false);
   const [isVideoExportModalOpen, setIsVideoExportModalOpen] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentDepth, setCurrentDepth] = useState<number>(10);
@@ -259,6 +262,23 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleExportSummaryCard = async () => {
+    if (!analysis) return;
+    try {
+      const finalFen = fens[fens.length - 1] || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+      const dataUrl = await exportMatchSummaryCard({
+        analysis,
+        fen: finalFen,
+        orientation,
+      });
+      const white = analysis.headers.White || 'White';
+      const black = analysis.headers.Black || 'Black';
+      downloadSummaryCardImage(dataUrl, `${white}_vs_${black}_summary.png`);
+    } catch (e) {
+      console.warn('Export match summary card error:', e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       <Navbar
@@ -276,6 +296,7 @@ export const App: React.FC = () => {
         onOpenTacticsQuiz={() => setIsQuizModalOpen(true)}
         onExportPgn={analysis ? handleExportAnnotatedPgn : undefined}
         onExportImage={handleExportCardImage}
+        onExportSummaryCard={analysis ? handleExportSummaryCard : undefined}
         onOpenVideoModal={analysis ? () => setIsVideoExportModalOpen(true) : undefined}
       />
 
@@ -431,6 +452,7 @@ export const App: React.FC = () => {
                         showBestMoveArrow={showBestMoveArrow}
                         onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
                         onExportCardImage={handleExportCardImage}
+                        onOpenPractice={() => setIsPracticeModalOpen(true)}
                       />
 
                       <div className="h-[300px]">
@@ -473,11 +495,19 @@ export const App: React.FC = () => {
         analysis={analysis}
       />
 
+      <PracticeAlternativeModal
+        isOpen={isPracticeModalOpen}
+        onClose={() => setIsPracticeModalOpen(false)}
+        move={currentMove}
+        orientation={orientation}
+      />
+
       <VideoExportModal
         isOpen={isVideoExportModalOpen}
         onClose={() => setIsVideoExportModalOpen(false)}
         analysis={analysis}
         orientation={orientation}
+        currentPly={currentPly}
       />
     </div>
   );
