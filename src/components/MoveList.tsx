@@ -66,6 +66,9 @@ export const MoveList: React.FC<Props> = ({
       }
     }
     const pawns = move.evalScore / 100;
+    if (Math.abs(pawns) < 0.05) {
+      return '0.0';
+    }
     return pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
   };
 

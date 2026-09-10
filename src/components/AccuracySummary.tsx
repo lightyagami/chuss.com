@@ -21,10 +21,10 @@ export const AccuracySummary: React.FC<Props> = ({ analysis }) => {
   const { whiteAccuracy, blackAccuracy, whiteStats, blackStats, headers } = analysis;
 
   const getAccuracyColor = (acc: number) => {
-    if (acc >= 90) return 'text-emerald-700';
-    if (acc >= 75) return 'text-teal-700';
-    if (acc >= 60) return 'text-amber-700';
-    return 'text-red-700';
+    if (acc >= 90) return 'text-emerald-700 dark:text-emerald-400';
+    if (acc >= 75) return 'text-teal-700 dark:text-teal-400';
+    if (acc >= 60) return 'text-amber-700 dark:text-amber-400';
+    return 'text-red-700 dark:text-red-400';
   };
 
   const getBarColor = (acc: number) => {
@@ -35,15 +35,15 @@ export const AccuracySummary: React.FC<Props> = ({ analysis }) => {
   };
 
   const statCategories = [
-    { label: 'Brilliant', icon: Sparkles, color: 'text-cyan-700', key: 'brilliant' as const },
-    { label: 'Best Moves', icon: CheckCircle2, color: 'text-emerald-700', key: 'best' as const },
-    { label: 'Excellent', icon: Star, color: 'text-teal-700', key: 'excellent' as const },
-    { label: 'Good', icon: ThumbsUp, color: 'text-blue-700', key: 'good' as const },
-    { label: 'Book Moves', icon: BookOpen, color: 'text-slate-600', key: 'book' as const },
-    { label: 'Inaccuracies', icon: HelpCircle, color: 'text-amber-700', key: 'inaccuracy' as const },
-    { label: 'Mistakes', icon: AlertTriangle, color: 'text-orange-700', key: 'mistake' as const },
-    { label: 'Blunders', icon: AlertOctagon, color: 'text-red-700', key: 'blunder' as const },
-    { label: 'Missed Wins', icon: XCircle, color: 'text-rose-700', key: 'missed_win' as const },
+    { label: 'Brilliant', icon: Sparkles, color: 'text-cyan-700 dark:text-cyan-400', key: 'brilliant' as const },
+    { label: 'Best Moves', icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-400', key: 'best' as const },
+    { label: 'Excellent', icon: Star, color: 'text-teal-700 dark:text-teal-400', key: 'excellent' as const },
+    { label: 'Good', icon: ThumbsUp, color: 'text-blue-700 dark:text-blue-400', key: 'good' as const },
+    { label: 'Book Moves', icon: BookOpen, color: 'text-slate-600 dark:text-zinc-400', key: 'book' as const },
+    { label: 'Inaccuracies', icon: HelpCircle, color: 'text-amber-700 dark:text-amber-400', key: 'inaccuracy' as const },
+    { label: 'Mistakes', icon: AlertTriangle, color: 'text-orange-700 dark:text-orange-400', key: 'mistake' as const },
+    { label: 'Blunders', icon: AlertOctagon, color: 'text-red-700 dark:text-red-400', key: 'blunder' as const },
+    { label: 'Missed Wins', icon: XCircle, color: 'text-rose-700 dark:text-rose-400', key: 'missed_win' as const },
   ];
 
   return (

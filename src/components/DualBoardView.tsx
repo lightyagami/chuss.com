@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Arrow } from 'react-chessboard';
 import { Chess } from 'chess.js';
@@ -22,18 +22,10 @@ export const DualBoardView: React.FC<Props> = ({
   orientation,
   onFlipBoard,
 }) => {
-  const [optimalStepIndex, setOptimalStepIndex] = useState<number>(0);
-  const [optimalFen, setOptimalFen] = useState<string>('');
-  const [optimalHistory, setOptimalHistory] = useState<{ san: string; from: string; to: string; fen: string }[]>([]);
+  const [selectedStep, setSelectedStep] = useState<{ ply?: number; step: number }>({ step: 0 });
 
-  useEffect(() => {
-    if (!currentMove) {
-      setOptimalFen('');
-      setOptimalHistory([]);
-      setOptimalStepIndex(0);
-      return;
-    }
-
+  const optimalHistory = useMemo(() => {
+    if (!currentMove) return [];
     try {
       const chess = new Chess(currentMove.fenBefore);
       const history: { san: string; from: string; to: string; fen: string }[] = [];
@@ -63,18 +55,18 @@ export const DualBoardView: React.FC<Props> = ({
         }
       }
 
-      setOptimalHistory(history);
-      setOptimalStepIndex(0);
-      setOptimalFen(history.length > 0 ? history[0].fen : currentMove.fenBefore);
+      return history;
     } catch {
-      setOptimalFen(currentMove.fenBefore);
+      return [];
     }
   }, [currentMove]);
 
+  const optimalStepIndex = selectedStep.ply === currentMove?.ply ? selectedStep.step : 0;
+  const optimalFen = optimalHistory[optimalStepIndex]?.fen || currentMove?.fenBefore || '';
+
   const handleStepOptimal = (newIdx: number) => {
     if (newIdx < 0 || newIdx >= optimalHistory.length) return;
-    setOptimalStepIndex(newIdx);
-    setOptimalFen(optimalHistory[newIdx].fen);
+    setSelectedStep({ ply: currentMove?.ply, step: newIdx });
   };
 
   const actualArrows = useMemo<Arrow[]>(() => {

@@ -41,7 +41,11 @@ export const EvalBar: React.FC<Props> = ({
     whitePercent = Math.min(96, Math.max(4, winRate * 100));
 
     const pawns = score / 100;
-    label = pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
+    if (Math.abs(pawns) < 0.05) {
+      label = '0.0';
+    } else {
+      label = pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
+    }
   }
 
   const topPercent = orientation === 'white' ? 100 - whitePercent : whitePercent;

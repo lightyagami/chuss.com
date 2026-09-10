@@ -14,10 +14,9 @@ const openingMoves = openingMovesRaw as Record<string, string[]>;
 
 export const OpeningExplorer: React.FC<Props> = ({ onLoadOpeningToAnalyzer }) => {
   const [searchQuery, setSearchQuery] = useState<string>('Sicilian');
-  const [chess] = useState<Chess>(() => new Chess());
-  const [fen, setFen] = useState<string>(chess.fen());
+  const [fen, setFen] = useState<string>(() => new Chess().fen());
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
-  const [selectedOpening, setSelectedOpening] = useState<string>('Sicilian Defense');
+  const [selectedOpening, setSelectedOpening] = useState<string>('Starting Position');
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
   const allOpeningsList = useMemo(() => {
@@ -41,6 +40,9 @@ export const OpeningExplorer: React.FC<Props> = ({ onLoadOpeningToAnalyzer }) =>
 
   const currentOpeningName = useMemo(() => {
     const key = fen.split(' ').slice(0, 4).join(' ');
+    if (key === 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -') {
+      return 'Starting Position';
+    }
     return openingBook[key] || selectedOpening || 'Custom Position';
   }, [fen, selectedOpening]);
 
@@ -77,8 +79,8 @@ export const OpeningExplorer: React.FC<Props> = ({ onLoadOpeningToAnalyzer }) =>
       setMoveHistory(c.history());
     } else {
       try {
-        chess.load(targetFen);
-        setFen(chess.fen());
+        const c = new Chess(targetFen);
+        setFen(c.fen());
         setMoveHistory([]);
       } catch {
         setFen(targetFen);
