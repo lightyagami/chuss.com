@@ -101,3 +101,63 @@ export async function fetchOngoingGames(username: string): Promise<ChessComLiveG
     return [];
   }
 }
+
+export async function fetchRecentGamesByUsername(
+  username: string,
+  limit = 10
+): Promise<ChessComGame[]> {
+  const cleanUsername = username.trim().toLowerCase();
+  if (!cleanUsername) return [];
+
+  const archivesRes = await fetch(
+    `https://api.chess.com/pub/player/${encodeURIComponent(cleanUsername)}/games/archives`,
+    { headers: { 'Accept': 'application/json' } }
+  );
+  if (!archivesRes.ok) return [];
+
+  const archivesData = await archivesRes.json();
+  const archives: string[] = archivesData?.archives || [];
+  const results: ChessComGame[] = [];
+
+  for (let i = archives.length - 1; i >= 0 && results.length < limit; i--) {
+    const monthUrl = archives[i];
+    const monthRes = await fetch(monthUrl, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!monthRes.ok) continue;
+
+    const monthData = await monthRes.json();
+    const games: ChessComGame[] = monthData?.games || [];
+
+    for (let j = games.length - 1; j >= 0 && results.length < limit; j--) {
+      if (games[j].pgn) {
+        results.push(games[j]);
+      }
+    }
+  }
+
+  return results;
+}
+
+export interface PlayerProfile {
+  username: string;
+  avatar?: string;
+  name?: string;
+  title?: string;
+  country?: string;
+  status?: string;
+}
+
+export async function fetchPlayerProfile(username: string): Promise<PlayerProfile | null> {
+  const clean = username.trim().toLowerCase();
+  if (!clean) return null;
+  try {
+    const res = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(clean)}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}

@@ -242,10 +242,11 @@ export async function analyzePgn(
     Event: cleanHeader(rawHeaders.Event),
   };
 
+  const initialFen = rawHeaders.SetUp === '1' && rawHeaders.FEN ? rawHeaders.FEN : undefined;
   const historyMoves = chess.history({ verbose: true });
   const totalMoves = historyMoves.length;
 
-  const replayChess = new Chess();
+  const replayChess = initialFen ? new Chess(initialFen) : new Chess();
   const moveAnalyses: MoveAnalysis[] = [];
 
   const whiteStats: Record<MoveClassification, number> = {

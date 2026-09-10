@@ -3,8 +3,10 @@ import { Chess } from 'chess.js';
 import type { GameAnalysisResult, MoveAnalysis } from './types/chess';
 import { analyzePgn } from './services/analyzer';
 import { stockfishService } from './services/stockfishService';
+import { exportAnnotatedPgn, downloadPgnFile } from './services/pgnExporter';
+import { exportPositionImage, downloadImage } from './services/imageExporter';
 import { DEFAULT_PGN } from './data/samplePgn';
-import { Navbar } from './components/Navbar';
+import { Navbar, type AppMode } from './components/Navbar';
 import { GameHeader } from './components/GameHeader';
 import { ChessBoardContainer } from './components/ChessBoardContainer';
 import { PlaybackControls } from './components/PlaybackControls';
@@ -16,9 +18,14 @@ import { PgnModal } from './components/PgnModal';
 import { LiveMatchTracker } from './components/LiveMatchTracker';
 import { EvalGraph } from './components/EvalGraph';
 import { AnalysisSkeleton } from './components/AnalysisSkeleton';
+import { OpeningExplorer } from './components/OpeningExplorer';
+import { BatchReviewDashboard } from './components/BatchReviewDashboard';
+import { OpponentScout } from './components/OpponentScout';
+import { PlayerCompare } from './components/PlayerCompare';
+import { TacticsQuizModal } from './components/TacticsQuizModal';
 
 export const App: React.FC = () => {
-  const [mode, setMode] = useState<'review' | 'live'>('review');
+  const [mode, setMode] = useState<AppMode>('review');
   const [pgn, setPgn] = useState<string>(DEFAULT_PGN);
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [showDualBoard, setShowDualBoard] = useState<boolean>(false);
@@ -29,6 +36,7 @@ export const App: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [progress, setProgress] = useState<{ current: number; total: number; message: string } | undefined>(undefined);
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentDepth, setCurrentDepth] = useState<number>(10);
   const totalPly = analysis?.moves.length ?? 0;
@@ -59,50 +67,51 @@ export const App: React.FC = () => {
 
   const activeAnalysisIdRef = useRef<number>(0);
 
-  const runAnalysis = useCallback(async (pgnString: string, depth = 10) => {
-    setCurrentDepth(depth);
-    const thisAnalysisId = ++activeAnalysisIdRef.current;
+  const runAnalysis = useCallback(async (pgnToAnalyze: string, depth = 10) => {
+    const currentId = ++activeAnalysisIdRef.current;
     setIsAnalyzing(true);
+    setCurrentPly(0);
     setIsPlaying(false);
     setIsViewingOptimal(false);
-    setAnalysis(null);
-    stockfishService.reset();
+    setCurrentDepth(depth);
 
     try {
       const chess = new Chess();
-      chess.loadPgn(pgnString);
-      const moves = chess.history({ verbose: true });
-
-      const replay = new Chess();
-      const fenList: string[] = [replay.fen()];
-      for (const m of moves) {
-        replay.move(m);
-        fenList.push(replay.fen());
+      chess.loadPgn(pgnToAnalyze);
+      const history = chess.history();
+      const rawHdrs = chess.header();
+      const initialFen = rawHdrs.SetUp === '1' && rawHdrs.FEN ? rawHdrs.FEN : undefined;
+      const replay = initialFen ? new Chess(initialFen) : new Chess();
+      const generatedFens: string[] = [replay.fen()];
+      for (const san of history) {
+        replay.move(san);
+        generatedFens.push(replay.fen());
       }
-      setFens(fenList);
-      setCurrentPly(0);
+      setFens(generatedFens);
+    } catch {
+      setFens(['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1']);
+    }
 
+    try {
       const result = await analyzePgn(
-        pgnString,
+        pgnToAnalyze,
         depth,
-        (p) => {
-          if (activeAnalysisIdRef.current === thisAnalysisId) {
-            setProgress(p);
+        (prog) => {
+          if (activeAnalysisIdRef.current === currentId) {
+            setProgress(prog);
           }
         },
-        () => activeAnalysisIdRef.current !== thisAnalysisId
+        () => activeAnalysisIdRef.current !== currentId
       );
 
-      if (activeAnalysisIdRef.current === thisAnalysisId) {
+      if (activeAnalysisIdRef.current === currentId) {
         setAnalysis(result);
-        setCurrentPly(1);
+        setIsAnalyzing(false);
+        setProgress(undefined);
       }
-    } catch (err: any) {
-      if (err?.message !== 'Analysis cancelled') {
-        console.error('Failed to parse or analyze PGN:', err);
-      }
-    } finally {
-      if (activeAnalysisIdRef.current === thisAnalysisId) {
+    } catch (err) {
+      if (activeAnalysisIdRef.current === currentId) {
+        console.error('Analysis error:', err);
         setIsAnalyzing(false);
         setProgress(undefined);
       }
@@ -117,66 +126,81 @@ export const App: React.FC = () => {
     };
   }, [runAnalysis]);
 
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const timer = window.setInterval(() => {
-      setIsViewingOptimal(false);
-      setCurrentPly((prev) => {
-        if (prev >= totalPly) {
-          setIsPlaying(false);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 1500);
-
-    return () => window.clearInterval(timer);
-  }, [isPlaying, totalPly]);
-
-  const handleJumpToStart = () => {
-    setIsPlaying(false);
-    setIsViewingOptimal(false);
-    setCurrentPly(0);
-  };
-
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setIsPlaying(false);
     setIsViewingOptimal(false);
     setCurrentPly((prev) => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setIsPlaying(false);
     setIsViewingOptimal(false);
     setCurrentPly((prev) => Math.min(totalPly, prev + 1));
-  };
+  }, [totalPly]);
 
-  const handleJumpToEnd = () => {
+  const handleJumpToStart = useCallback(() => {
+    setIsPlaying(false);
+    setIsViewingOptimal(false);
+    setCurrentPly(0);
+  }, []);
+
+  const handleJumpToEnd = useCallback(() => {
     setIsPlaying(false);
     setIsViewingOptimal(false);
     setCurrentPly(totalPly);
-  };
+  }, [totalPly]);
 
-  const handleTogglePlay = () => {
-    if (totalPly === 0) return;
-    if (currentPly >= totalPly) {
-      setCurrentPly(0);
-    }
-    setIsPlaying((prev) => !prev);
-  };
-
-  const handleFlipBoard = () => {
+  const handleFlipBoard = useCallback(() => {
     setOrientation((prev) => (prev === 'white' ? 'black' : 'white'));
-  };
+  }, []);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentPly((prev) => {
+          if (prev >= totalPly) {
+            setIsPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlaying, totalPly]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setIsPlaying((prev) => !prev);
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        handleFlipBoard();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePrev, handleNext, handleFlipBoard]);
 
   const currentMove: MoveAnalysis | undefined =
-    analysis && currentPly > 0 ? analysis.moves[currentPly - 1] : undefined;
+    currentPly > 0 && analysis?.moves ? analysis.moves[currentPly - 1] : undefined;
 
-  const optimalFen = useMemo(() => {
-    if (!currentMove?.fenBefore) return null;
-    if (!currentMove.bestMoveSan && !currentMove.bestMoveUci) return null;
-
+  const optimalFen = useMemo<string | null>(() => {
+    if (!currentMove) return null;
     try {
       const chess = new Chess(currentMove.fenBefore);
       if (currentMove.bestMoveSan) {
@@ -208,6 +232,28 @@ export const App: React.FC = () => {
     ? optimalFen
     : fens[currentPly] || fens[0] || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
+  const handleExportAnnotatedPgn = () => {
+    if (!analysis) return;
+    const pgnString = exportAnnotatedPgn(analysis);
+    const white = analysis.headers.White || 'White';
+    const black = analysis.headers.Black || 'Black';
+    downloadPgnFile(pgnString, `${white}_vs_${black}_annotated.pgn`);
+  };
+
+  const handleExportCardImage = async () => {
+    try {
+      const dataUrl = await exportPositionImage({
+        headers: analysis?.headers,
+        currentMove,
+        fen: displayFen,
+        orientation,
+      });
+      downloadImage(dataUrl, `chess_move_${currentPly}.png`);
+    } catch (e) {
+      console.warn('Export image error:', e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       <Navbar
@@ -222,10 +268,13 @@ export const App: React.FC = () => {
         isAnalyzing={isAnalyzing}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenTacticsQuiz={() => setIsQuizModalOpen(true)}
+        onExportPgn={analysis ? handleExportAnnotatedPgn : undefined}
+        onExportImage={handleExportCardImage}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex flex-col gap-6">
-        {mode === 'live' ? (
+        {mode === 'live' && (
           <LiveMatchTracker
             onReviewFinishedGame={(finishedPgn) => {
               setPgn(finishedPgn);
@@ -233,7 +282,43 @@ export const App: React.FC = () => {
               runAnalysis(finishedPgn, 10);
             }}
           />
-        ) : (
+        )}
+
+        {mode === 'openings' && (
+          <OpeningExplorer
+            onLoadOpeningToAnalyzer={(openingPgn) => {
+              setPgn(openingPgn);
+              setMode('review');
+              runAnalysis(openingPgn, 10);
+            }}
+          />
+        )}
+
+        {mode === 'batch' && (
+          <BatchReviewDashboard
+            onSelectGameToReview={(batchPgn) => {
+              setPgn(batchPgn);
+              setMode('review');
+              runAnalysis(batchPgn, 10);
+            }}
+          />
+        )}
+
+        {mode === 'scout' && (
+          <OpponentScout
+            onReviewMatch={(scoutPgn) => {
+              setPgn(scoutPgn);
+              setMode('review');
+              runAnalysis(scoutPgn, 10);
+            }}
+          />
+        )}
+
+        {mode === 'compare' && (
+          <PlayerCompare />
+        )}
+
+        {mode === 'review' && (
           <>
             <GameHeader
               headers={analysis?.headers || { White: 'demonexe2', Black: 'ccobb09', Result: '1-0' }}
@@ -260,12 +345,12 @@ export const App: React.FC = () => {
                     onPrev={handlePrev}
                     onNext={handleNext}
                     onJumpToEnd={handleJumpToEnd}
-                    onTogglePlay={handleTogglePlay}
-                    onFlipBoard={handleFlipBoard}
+                    onTogglePlay={() => setIsPlaying((prev) => !prev)}
                     orientation={orientation}
-                    disabled={isImportModalOpen}
+                    onFlipBoard={handleFlipBoard}
                   />
                 </div>
+
                 {analysis && analysis.moves.length > 0 && (
                   <div className="w-full">
                     <EvalGraph
@@ -280,32 +365,6 @@ export const App: React.FC = () => {
                     />
                   </div>
                 )}
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                  <OptimalComparison
-                    currentMove={currentMove}
-                    showDualBoard={showDualBoard}
-                    onToggleDualBoard={() => setShowDualBoard(false)}
-                    showBestMoveArrow={showBestMoveArrow}
-                    onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
-                  />
-
-                  <div className="h-[420px]">
-                    <MoveList
-                      moves={analysis?.moves || []}
-                      currentPly={currentPly}
-                      onSelectPly={(ply) => {
-                        setIsPlaying(false);
-                        setIsViewingOptimal(false);
-                        setCurrentPly(ply);
-                      }}
-                      whiteName={analysis?.headers.White || 'White'}
-                      blackName={analysis?.headers.Black || 'Black'}
-                    />
-                  </div>
-
-                  {analysis && <AccuracySummary analysis={analysis} />}
-                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -315,10 +374,10 @@ export const App: React.FC = () => {
                     orientation={orientation}
                     currentMove={currentMove}
                     showBestMoveArrow={showBestMoveArrow}
-                    whiteName={analysis?.headers.White || 'demonexe2'}
-                    blackName={analysis?.headers.Black || 'ccobb09'}
-                    whiteElo={analysis?.headers.WhiteElo || '1085'}
-                    blackElo={analysis?.headers.BlackElo || '536'}
+                    whiteName={analysis?.headers.White || 'White'}
+                    blackName={analysis?.headers.Black || 'Black'}
+                    whiteElo={analysis?.headers.WhiteElo}
+                    blackElo={analysis?.headers.BlackElo}
                     isViewingOptimal={isViewingOptimal}
                     onToggleViewOptimal={() => setIsViewingOptimal((prev) => !prev)}
                     hasOptimalAlternative={hasOptimalAlternative}
@@ -333,10 +392,9 @@ export const App: React.FC = () => {
                       onPrev={handlePrev}
                       onNext={handleNext}
                       onJumpToEnd={handleJumpToEnd}
-                      onTogglePlay={handleTogglePlay}
-                      onFlipBoard={handleFlipBoard}
+                      onTogglePlay={() => setIsPlaying((prev) => !prev)}
                       orientation={orientation}
-                      disabled={isImportModalOpen}
+                      onFlipBoard={handleFlipBoard}
                     />
                   </div>
                   {analysis && analysis.moves.length > 0 && (
@@ -366,6 +424,7 @@ export const App: React.FC = () => {
                         onToggleDualBoard={() => setShowDualBoard(true)}
                         showBestMoveArrow={showBestMoveArrow}
                         onToggleBestMoveArrow={() => setShowBestMoveArrow((p) => !p)}
+                        onExportCardImage={handleExportCardImage}
                       />
 
                       <div className="h-[300px]">
@@ -400,6 +459,12 @@ export const App: React.FC = () => {
           setPgn(newPgn);
           runAnalysis(newPgn, depth);
         }}
+      />
+
+      <TacticsQuizModal
+        isOpen={isQuizModalOpen}
+        onClose={() => setIsQuizModalOpen(false)}
+        analysis={analysis}
       />
     </div>
   );
