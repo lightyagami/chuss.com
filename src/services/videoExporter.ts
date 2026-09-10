@@ -8,6 +8,7 @@ export interface VideoExportOptions {
   mode: VideoExportMode;
   secondsPerMove?: number;
   orientation?: 'white' | 'black';
+  includeAudio?: boolean;
   onProgress?: (prog: { current: number; total: number; percent: number; message: string }) => void;
   isCancelled?: () => boolean;
 }
@@ -25,6 +26,8 @@ interface FrameData {
   mateIn?: number;
   classification?: MoveClassification;
   explanation?: string;
+  isCapture?: boolean;
+  isCheck?: boolean;
 }
 
 interface DualFrameData {
@@ -80,6 +83,8 @@ function buildActualFrames(analysis: GameAnalysisResult): FrameData[] {
       mateIn: m.mateIn,
       classification: m.classification,
       explanation: m.explanation,
+      isCapture: m.san.includes('x'),
+      isCheck: m.san.includes('+') || m.san.includes('#'),
     });
   }
 
@@ -101,23 +106,76 @@ function buildOptimalFrames(analysis: GameAnalysisResult): FrameData[] {
     explanation: 'Initial Position',
   });
 
-  let divergenceIndex = -1;
-  for (let i = 0; i < analysis.moves.length; i++) {
-    const m = analysis.moves[i];
-    if (m.classification === 'blunder' || m.classification === 'missed_win' || m.classification === 'mistake') {
-      if (m.optimalLine && m.optimalLine.length > 0) {
-        divergenceIndex = i;
-        break;
+  let currentChess: Chess;
+  try {
+    currentChess = new Chess(startFen);
+  } catch {
+    currentChess = new Chess();
+  }
+
+  let diverged = false;
+
+  for (const m of analysis.moves) {
+    const isImperfect = m.classification && ['inaccuracy', 'mistake', 'blunder', 'missed_win'].includes(m.classification);
+
+    if (!diverged && isImperfect && m.bestMoveSan) {
+      diverged = true;
+      try {
+        const moveRes = currentChess.move(m.bestMoveSan);
+        if (moveRes) {
+          frames.push({
+            ply: m.ply,
+            moveNumber: m.moveNumber,
+            color: m.color,
+            san: moveRes.san,
+            from: moveRes.from,
+            to: moveRes.to,
+            fen: currentChess.fen(),
+            evalScore: m.bestMoveScore ?? m.evalScore,
+            isMate: m.bestMoveIsMate ?? false,
+            mateIn: m.bestMoveMateIn,
+            classification: 'best',
+            explanation: `Stockfish best response: ${moveRes.san}`,
+            isCapture: moveRes.san.includes('x'),
+            isCheck: moveRes.san.includes('+') || moveRes.san.includes('#'),
+          });
+          continue;
+        }
+      } catch {
       }
     }
-  }
 
-  if (divergenceIndex === -1) {
-    return buildActualFrames(analysis);
-  }
+    if (diverged) {
+      try {
+        const legalMoves = currentChess.moves({ verbose: true });
+        if (legalMoves.length > 0) {
+          const chosen = legalMoves[0];
+          currentChess.move(chosen);
+          frames.push({
+            ply: m.ply,
+            moveNumber: m.moveNumber,
+            color: m.color,
+            san: chosen.san,
+            from: chosen.from,
+            to: chosen.to,
+            fen: currentChess.fen(),
+            evalScore: m.evalScore,
+            isMate: false,
+            explanation: 'Engine Continuation',
+            isCapture: chosen.san.includes('x'),
+            isCheck: chosen.san.includes('+') || chosen.san.includes('#'),
+          });
+          continue;
+        }
+      } catch {
+      }
+    }
 
-  for (let i = 0; i < divergenceIndex; i++) {
-    const m = analysis.moves[i];
+    try {
+      currentChess.load(m.fenAfter);
+    } catch {
+    }
+
     frames.push({
       ply: m.ply,
       moveNumber: m.moveNumber,
@@ -131,34 +189,10 @@ function buildOptimalFrames(analysis: GameAnalysisResult): FrameData[] {
       mateIn: m.mateIn,
       classification: m.classification,
       explanation: m.explanation,
+      isCapture: m.san.includes('x'),
+      isCheck: m.san.includes('+') || m.san.includes('#'),
     });
   }
-
-  const divMove = analysis.moves[divergenceIndex];
-  try {
-    const chess = new Chess(divMove.fenBefore);
-    for (let k = 0; k < divMove.optimalLine.length; k++) {
-      const san = divMove.optimalLine[k];
-      const m = chess.move(san);
-      if (!m) break;
-      const stepPly = divMove.ply + k;
-      const stepMoveNum = Math.floor((stepPly - 1) / 2) + 1;
-      frames.push({
-        ply: stepPly,
-        moveNumber: stepMoveNum,
-        color: m.color,
-        san: m.san,
-        from: m.from,
-        to: m.to,
-        fen: chess.fen(),
-        evalScore: divMove.bestMoveScore ?? divMove.evalScore,
-        isMate: divMove.bestMoveIsMate ?? false,
-        mateIn: divMove.bestMoveMateIn,
-        classification: k === 0 ? 'best' : undefined,
-        explanation: k === 0 ? `Optimal engine alternative to ${divMove.san}` : 'Optimal continuation',
-      });
-    }
-  } catch {}
 
   return frames;
 }
@@ -335,16 +369,32 @@ function drawSingleFrame(
 
   if (frame.classification) {
     const badgeColor = CLASSIFICATION_COLORS[frame.classification] || '#10b981';
-    ctx.fillStyle = badgeColor;
-    ctx.font = 'bold 12px system-ui, sans-serif';
-    ctx.textAlign = 'right';
     const tag = frame.classification.toUpperCase().replace('_', ' ');
-    ctx.fillText(tag, width - 48, footerY);
+
+    ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+    const tagWidth = ctx.measureText(tag).width;
+    const badgePadX = 10;
+    const badgeW = tagWidth + badgePadX * 2;
+    const badgeH = 22;
+    const badgeX = width - 48 - badgeW;
+    const badgeY = footerY - 16;
+
+    ctx.fillStyle = badgeColor;
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tag, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
 
     if (frame.explanation) {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = '#a1a1aa';
       ctx.font = '12px system-ui, sans-serif';
-      ctx.fillText(frame.explanation, width - 48, footerY + 24);
+      ctx.fillText(frame.explanation, width - 48, footerY + 26);
     }
   }
 }
@@ -441,11 +491,61 @@ function drawDualFrame(
   ctx.fillText(`Optimal Eval: ${dual.optimal.evalScore >= 0 ? '+' : ''}${optPawns}`, rightBoardX + boardSize / 2, footerY + 22);
 }
 
+function playSynthTone(
+  audioCtx: AudioContext,
+  dest: MediaStreamAudioDestinationNode,
+  type: 'move' | 'capture' | 'check'
+) {
+  try {
+    const now = audioCtx.currentTime;
+    if (type === 'check') {
+      [1046.5, 1318.5].forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        const start = now + idx * 0.06;
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.2, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(start);
+        osc.stop(start + 0.36);
+      });
+    } else if (type === 'capture') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+      gain.gain.setValueAtTime(0.45, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } else {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.085);
+    }
+  } catch {}
+}
+
 export async function exportGameplayVideo({
   analysis,
   mode,
   secondsPerMove = 1.0,
   orientation = 'white',
+  includeAudio = true,
   onProgress,
   isCancelled,
 }: VideoExportOptions): Promise<Blob> {
@@ -459,17 +559,46 @@ export async function exportGameplayVideo({
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context unavailable');
 
-  const stream = canvas.captureStream(30);
+  const canvasStream = canvas.captureStream(30);
 
-  let mimeType = 'video/webm;codecs=vp9';
-  if (!MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = 'video/webm';
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      mimeType = '';
+  let audioCtx: AudioContext | null = null;
+  let audioDest: MediaStreamAudioDestinationNode | null = null;
+  let combinedStream: MediaStream = canvasStream;
+
+  if (includeAudio) {
+    try {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+        audioDest = audioCtx.createMediaStreamDestination();
+        const audioTrack = audioDest.stream.getAudioTracks()[0];
+        if (audioTrack) {
+          combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            audioTrack,
+          ]);
+        }
+      }
+    } catch {
+      combinedStream = canvasStream;
     }
   }
 
-  const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+  let mimeType = 'video/webm;codecs=vp9,opus';
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm;codecs=vp8,opus';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = 'video/webm';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = '';
+      }
+    }
+  }
+
+  const recorder = mimeType ? new MediaRecorder(combinedStream, { mimeType }) : new MediaRecorder(combinedStream);
   const chunks: Blob[] = [];
 
   recorder.ondataavailable = (e) => {
@@ -495,6 +624,9 @@ export async function exportGameplayVideo({
   for (let idx = 0; idx < totalFrames; idx++) {
     if (isCancelled?.()) {
       recorder.stop();
+      if (audioCtx) {
+        audioCtx.close().catch(() => {});
+      }
       throw new Error('Video export cancelled');
     }
 
@@ -510,17 +642,30 @@ export async function exportGameplayVideo({
 
     if (isDual) {
       drawDualFrame(ctx, width, height, analysis, dualFrames[idx], orientation);
+      if (audioCtx && audioDest && idx > 0) {
+        const act = dualFrames[idx].actual;
+        const soundType = act.isCheck ? 'check' : (act.isCapture ? 'capture' : 'move');
+        playSynthTone(audioCtx, audioDest, soundType);
+      }
     } else {
-      drawSingleFrame(ctx, width, height, analysis, singleFrames[idx], orientation, subTitle);
+      const f = singleFrames[idx];
+      drawSingleFrame(ctx, width, height, analysis, f, orientation, subTitle);
+      if (audioCtx && audioDest && idx > 0) {
+        const soundType = f.isCheck ? 'check' : (f.isCapture ? 'capture' : 'move');
+        playSynthTone(audioCtx, audioDest, soundType);
+      }
     }
 
     await new Promise((r) => setTimeout(r, stepMs));
   }
 
-  await new Promise((r) => setTimeout(r, 1200));
+  await new Promise((r) => setTimeout(r, 1000));
 
   return new Promise<Blob>((resolve) => {
     recorder.onstop = () => {
+      if (audioCtx) {
+        audioCtx.close().catch(() => {});
+      }
       const blob = new Blob(chunks, { type: 'video/webm' });
       resolve(blob);
     };
